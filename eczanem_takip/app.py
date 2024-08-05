@@ -1,11 +1,13 @@
 from flask import Flask, request, jsonify
+
+from eczanem_takip.medicine_app import medicine_bp
 from models import db
 from models.User import User
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:password@db:3306/eczanemtakipdb'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
+app.register_blueprint(medicine_bp, url_prefix='/api')
 db.init_app(app)
 
 

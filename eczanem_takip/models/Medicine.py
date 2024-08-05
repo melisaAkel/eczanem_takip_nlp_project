@@ -1,12 +1,4 @@
 from . import db
-from sqlalchemy.orm import relationship
-from .User import User  # Import the User model for relationship
-
-# Association table for many-to-many relationship between User and Medicine
-user_medicine = db.Table('user_medicine',
-    db.Column('user_id', db.Integer, db.ForeignKey('user.id'), primary_key=True),
-    db.Column('medicine_id', db.Integer, db.ForeignKey('medicine.id'), primary_key=True)
-)
 
 class Medicine(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -17,9 +9,20 @@ class Medicine(db.Model):
     reorder_level = db.Column(db.Integer, nullable=False)
     barcode = db.Column(db.String(80), nullable=False)
     equivalent_medicine_group = db.Column(db.String(80), nullable=True)  # Added equivalent_medicine_group
-    active_ingredients = relationship('ActiveIngredient', backref='medicine', lazy=True)
-    stocks = relationship('MedicineStock', backref='medicine', lazy=True)
-    users = relationship('User', secondary=user_medicine, back_populates='medicines')
+    active_ingredients = db.relationship('ActiveIngredient', backref='medicine', lazy=True)
+    stocks = db.relationship('MedicineStock', backref='medicine', lazy=True)
+
+    def serialize(self):
+        return {
+            'id': self.id,
+            'public_number': self.public_number,
+            'name': self.name,
+            'brand': self.brand,
+            'form': self.form,
+            'reorder_level': self.reorder_level,
+            'barcode': self.barcode,
+            'equivalent_medicine_group': self.equivalent_medicine_group
+        }
 
 class ActiveIngredient(db.Model):
     id = db.Column(db.Integer, primary_key=True)
