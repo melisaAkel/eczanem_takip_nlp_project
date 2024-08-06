@@ -1,64 +1,31 @@
 from flask import Blueprint, request, jsonify
-from models import db
-from models.Medicine import Medicine, ActiveIngredient, Supplier, MedicineStock
 
 medicine_bp = Blueprint('medicine', __name__)
+from flask_mysqldb import MySQL
+from models.Medicine import Medicine
+
+mysql = MySQL()
 
 
-# Create a new medicine
-@medicine_bp.route('/medicines', methods=['POST'])
-def create_medicine():
+@medicine_bp.route('/register_medicine', methods=['POST'])
+def register_medicine():
     data = request.get_json()
-    new_medicine = Medicine(
-        public_number=data.get('public_number'),
-        name=data.get('name'),
-        brand=data.get('brand'),
-        form=data.get('form'),
-        reorder_level=data.get('reorder_level'),
-        barcode=data.get('barcode'),
-        equivalent_medicine_group=data.get('equivalent_medicine_group')
-    )
-    db.session.add(new_medicine)
-    db.session.commit()
-    return jsonify({'message': 'Medicine created successfully'}), 201
+    public_number = data.get('public_number')
+    name = data.get('name')
+    brand = data.get('brand')
+    form = data.get('form')
+    barcode = data.get('barcode')
+    equivalent_medicine_group = data.get('equivalent_medicine_group')
 
+    if not all([public_number, name, brand, barcode]):
+        return jsonify({"success": False, "message": "Public number, name, brand, and barcode are required"}), 400
 
-# Get all medicines
-@medicine_bp.route('/medicines', methods=['GET'])
-def get_medicines():
-    medicines = Medicine.query.all()
-    return jsonify([medicine.serialize() for medicine in medicines])
+    new_medicine = Medicine(None, public_number, name, brand, form, barcode, equivalent_medicine_group)
 
-
-# Get a single medicine
-@medicine_bp.route('/medicines/<int:id>', methods=['GET'])
-def get_medicine(id):
-    medicine = Medicine.query.get_or_404(id)
-    return jsonify(medicine.serialize())
-
-
-# Update a medicine
-@medicine_bp.route('/medicines/<int:id>', methods=['PUT'])
-def update_medicine(id):
-    data = request.get_json()
-    medicine = Medicine.query.get_or_404(id)
-    medicine.public_number = data.get('public_number')
-    medicine.name = data.get('name')
-    medicine.brand = data.get('brand')
-    medicine.form = data.get('form')
-    medicine.reorder_level = data.get('reorder_level')
-    medicine.barcode = data.get('barcode')
-    medicine.equivalent_medicine_group = data.get('equivalent_medicine_group')
-    db.session.commit()
-    return jsonify({'message': 'Medicine updated successfully'})
-
-
-# Delete a medicine
-@medicine_bp.route('/medicines/<int:id>', methods=['DELETE'])
-def delete_medicine(id):
-    medicine = Medicine.query.get_or_404(id)
-    db.session.delete(medicine)
-    db.session.commit()
-    return jsonify({'message': 'Medicine deleted successfully'})
-
-
+    try:
+        Medicine.add(mysql.connection, new_medicine)
+        return jsonify({"success": True, "message": "Medicine successfully added to the system.",
+                        "medicine": new_medicine.serialize()}), 201
+    except Exception as e:
+        mysql.connection.rollback()
+        return jsonify({"success": False, "message": "Failed to add medicine", "error": str(e)}), 500
