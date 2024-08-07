@@ -35,17 +35,25 @@ CREATE TABLE medicine (
     equivalent_medicine_group VARCHAR(80)
 );
 
+CREATE TABLE report (
+    date DATE NOT NULL,
+    doctor_speciality VARCHAR(80) NOT NULL,
+    report_type ENUM('KIRMIZI', 'MOR','TURUNCU', 'YEŞİL', 'NORMAL') DEFAULT 'NORMAL',
+    type ENUM('AYAKTAN', 'YATAN') DEFAULT 'AYAKTAN'
+);
+
 CREATE TABLE active_ingredient (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(80) NOT NULL,
-    amount VARCHAR(80) NOT NULL
+    amount VARCHAR(80) NOT NULL,
+    UNIQUE (name, amount)
 );
 
 CREATE TABLE medicine_active_ingredient (
     medicine_id INT,
     active_ingredient_id INT,
     PRIMARY KEY (medicine_id, active_ingredient_id),
-    FOREIGN KEY (medicine_id) REFERENCES medicine(id),
+    FOREIGN KEY (medicine_id) REFERENCES medicine(id) ON DELETE CASCADE,
     FOREIGN KEY (active_ingredient_id) REFERENCES active_ingredient(id)
 );
 
@@ -56,17 +64,9 @@ CREATE TABLE medicine_stock (
     user_id INT NOT NULL,
     expiry_date DATE NOT NULL,
     quantity INT NOT NULL,
-    FOREIGN KEY (medicine_id) REFERENCES medicine(id),
+    FOREIGN KEY (medicine_id) REFERENCES medicine(id) ON DELETE CASCADE,
     FOREIGN KEY (supplier_id) REFERENCES supplier(id),
     FOREIGN KEY (user_id) REFERENCES user(id)
-);
-
-CREATE TABLE user_medicine (
-    user_id INT NOT NULL,
-    medicine_id INT NOT NULL,
-    PRIMARY KEY (user_id, medicine_id),
-    FOREIGN KEY (user_id) REFERENCES user(id),
-    FOREIGN KEY (medicine_id) REFERENCES medicine(id)
 );
 
 CREATE TABLE medicine_sales (
@@ -77,21 +77,10 @@ CREATE TABLE medicine_sales (
     sale_date DATE NOT NULL,
     quantity INT NOT NULL,
     FOREIGN KEY (user_id) REFERENCES user(id),
-    FOREIGN KEY (medicine_id) REFERENCES medicine(id)
+    FOREIGN KEY (medicine_id) REFERENCES medicine(id) ON DELETE CASCADE
 );
 
 DELIMITER //
-
-CREATE TRIGGER after_medicine_stock_insert
-AFTER INSERT ON medicine_stock
-FOR EACH ROW
-BEGIN
-    DECLARE cnt INT;
-    SELECT COUNT(*) INTO cnt FROM user_medicine WHERE user_id = NEW.user_id AND medicine_id = NEW.medicine_id;
-    IF cnt = 0 THEN
-        INSERT INTO user_medicine (user_id, medicine_id) VALUES (NEW.user_id, NEW.medicine_id);
-    END IF;
-END //
 
 CREATE TRIGGER after_medicine_sale_insert
 AFTER INSERT ON medicine_sales

@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pharmacy Inventory Register</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background: #f3f4f6;
+        }
+        .register-container {
+            background: #ffffff;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            max-width: 400px;
+            width: 100%;
+            text-align: center;
+        }
+        .register-container h1 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 24px;
+            font-weight: 700;
+        }
+        .register-container input[type="text"],
+        .register-container input[type="password"],
+        .register-container input[type="email"] {
+            width: 100%;
+            padding: 15px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+        .register-container button {
+            background: #1e3a8a;
+            color: #fff;
+            border: none;
+            padding: 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 16px;
+            font-weight: 600;
+            margin-top: 20px;
+        }
+        .register-container button:hover {
+            background: #1e40af;
+        }
+        .logo {
+            width: 80px;
+            margin-bottom: 20px;
+        }
+        .footer {
+            margin-top: 20px;
+            font-size: 14px;
+            color: #666;
+        }
+        .link {
+            margin-top: 15px;
+            font-size: 14px;
+            color: #1e3a8a;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+        .link:hover {
+            color: #1e40af;
+        }
+    </style>
+</head>
+<body>
+    <div class="register-container">
+        <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Pharmacy Logo" class="logo">
+        <h1>Register</h1>
+        <form id="registerForm">
+            <input type="text" id="registerName" placeholder="Name" required>
+            <input type="text" id="registerSurname" placeholder="Surname" required>
+            <input type="text" id="registerUsername" placeholder="Username" required>
+            <input type="email" id="registerEmail" placeholder="Email" required>
+            <input type="password" id="registerPassword" placeholder="Password" required>
+            <button type="submit">Register</button>
+        </form>
+        <div class="link">
+            <a href="pharmacy_user_login_page.html">Giriş Yap</a>
+        </div>
+        <div class="footer">
+            &copy; 2024 Pharmacy Inventory Management
+        </div>
+    </div>
+    <script>
+        document.getElementById('registerForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+
+            const name = document.getElementById('registerName').value;
+            const surname = document.getElementById('registerSurname').value;
+            const username = document.getElementById('registerUsername').value;
+            const email = document.getElementById('registerEmail').value;
+            const password = document.getElementById('registerPassword').value;
+
+            const response = await fetch('http://localhost:5000/api/users/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ name, surname, username, email, password })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                alert('Registration successful');
+                // Redirect or perform actions upon successful registration
+            } else {
+                alert('Registration failed: ' + result.message);
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,11 +1,12 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, render_template
 from flask_mysqldb import MySQL
 from models.User import User
+from flask_cors import CORS
 mysql = MySQL()
 
 user_bp = Blueprint('user', __name__)
+CORS(user_bp)
 
-# User login
 @user_bp.route('/login', methods=['POST'])
 def login():
     data = request.get_json()

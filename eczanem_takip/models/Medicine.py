@@ -1,5 +1,18 @@
 import MySQLdb
 
+class ActiveIngredient:
+    def __init__(self, id, name, amount):
+        self.id = id
+        self.name = name
+        self.amount = amount
+
+    def serialize(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'amount': self.amount
+        }
+
 class Medicine:
     def __init__(self, id, public_number, atc_code, report_type, name, brand, form, barcode, equivalent_medicine_group):
         self.id = id
@@ -63,7 +76,6 @@ class Medicine:
               medicine.form, medicine.barcode, medicine.equivalent_medicine_group))
         connection.commit()
         medicine_id = cursor.lastrowid
-        print(medicine_id)
         cursor.close()
         return medicine_id
 
@@ -116,3 +128,84 @@ class Medicine:
             raise e
         finally:
             cursor.close()
+
+
+
+    @staticmethod
+    def get_active_ingredient_by_name(connection, name):
+        cursor = connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.execute("SELECT * FROM active_ingredient WHERE name = %s", (name,))
+        row = cursor.fetchone()
+        cursor.close()
+        if row:
+            return ActiveIngredient(**row)
+        return None
+
+    @staticmethod
+    def add_active_ingredient(connection, name, amount):
+        cursor = connection.cursor()
+        cursor.execute("INSERT INTO active_ingredient (name, amount) VALUES (%s, %s)", (name, amount))
+        connection.commit()
+        return cursor.lastrowid
+
+    @staticmethod
+    def add_medicine_active_ingredient(connection, medicine_id, active_ingredient_id):
+        cursor = connection.cursor()
+        cursor.execute("INSERT INTO medicine_active_ingredient (medicine_id, active_ingredient_id) VALUES (%s, %s)",
+                       (medicine_id, active_ingredient_id))
+        connection.commit()
+
+
+    @staticmethod
+    def get_active_ingredients_for_medicine(connection, medicine_id):
+        cursor = connection.cursor()
+        cursor.execute("""
+            SELECT ai.id, ai.name, ai.amount 
+            FROM active_ingredient ai
+            JOIN medicine_active_ingredient mai ON ai.id = mai.active_ingredient_id
+            WHERE mai.medicine_id = %s
+        """, (medicine_id,))
+        rows = cursor.fetchall()
+        cursor.close()
+        return [ActiveIngredient(id=row[0], name=row[1], amount=row[2]) for row in rows]
+
+    @staticmethod
+    def update_active_ingredient(connection, ingredient):
+        cursor = connection.cursor()
+        cursor.execute("""
+            UPDATE active_ingredient SET name = %s, amount = %s WHERE id = %s
+        """, (ingredient.name, ingredient.amount, ingredient.id))
+        connection.commit()
+        cursor.close()
+
+    @staticmethod
+    def delete_active_ingredient(connection, ingredient_id):
+        cursor = connection.cursor()
+        cursor.execute("DELETE FROM active_ingredient WHERE id = %s", (ingredient_id,))
+        connection.commit()
+        cursor.close()
+
+    @staticmethod
+    def get_active_ingredient_by_id(connection, ingredient_id):
+        cursor = connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.execute("SELECT * FROM active_ingredient WHERE id = %s", (ingredient_id,))
+        row = cursor.fetchone()
+        cursor.close()
+        if row:
+            return ActiveIngredient(**row)
+        return None
+
+    @staticmethod
+    def get_all_active_ingredients( connection):
+        cursor = connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.execute("SELECT * FROM active_ingredient")
+        rows = cursor.fetchall()
+        cursor.close()
+        return [ActiveIngredient(id=row['id'], name=row['name'], amount=row['amount']) for row in rows]
+
+    @classmethod
+    def remove_all_active_ingredients(cls, connection, medicine_id):
+        cursor = connection.cursor()
+        cursor.execute("DELETE FROM medicine_active_ingredient WHERE medicine_id = %s", (medicine_id,))
+        connection.commit()
+        cursor.close()

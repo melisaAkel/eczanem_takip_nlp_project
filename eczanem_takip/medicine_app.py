@@ -4,37 +4,12 @@ from flask import Blueprint, request, jsonify
 from flask_mysqldb import MySQL
 from models.Medicine import Medicine  # Import the Medicine class from your models
 import pandas as pd
+
 mysql = MySQL()
 logging.basicConfig(filename='/tmp/medicine_processing.log', level=logging.DEBUG, format='%(asctime)s %(message)s')
 
 medicine_bp = Blueprint('medicine', __name__)
 
-# Register Medicine (Create)
-@medicine_bp.route('/register_medicine', methods=['POST'])
-def register_medicine():
-    data = request.get_json()
-    public_number = data.get('public_number')
-    atc_code = data.get('atc_code')
-    report_type = data.get('report_type', 'NORMAL')
-    name = data.get('name')
-    brand = data.get('brand')
-    form = data.get('form')
-    barcode = data.get('barcode')
-    equivalent_medicine_group = data.get('equivalent_medicine_group')
-
-    if not all([public_number, atc_code, name, brand, barcode]):
-        return jsonify({"success": False, "message": "Public number, ATC code, name, brand, and barcode are required"}), 400
-
-    new_medicine = Medicine(None, public_number, atc_code, report_type, name, brand, form, barcode, equivalent_medicine_group)
-
-    try:
-        medicine_id = Medicine.add(mysql.connection, new_medicine)
-        new_medicine.id = medicine_id
-        return jsonify({"success": True, "message": "Medicine successfully added to the system.",
-                        "medicine": new_medicine.serialize()}), 201
-    except Exception as e:
-        mysql.connection.rollback()
-        return jsonify({"success": False, "message": "Failed to add medicine", "error": str(e)}), 500
 
 # Get All Medicines (Read)
 @medicine_bp.route('/get_all_medicines', methods=['GET'])
@@ -45,20 +20,25 @@ def get_all_medicines():
     except Exception as e:
         return jsonify({"success": False, "message": "Failed to retrieve medicines", "error": str(e)}), 500
 
+
 # Get Medicine by ID (Read)
-@medicine_bp.route('/get_medicine/<int:medicine_id>', methods=['GET'])
+@medicine_bp.route('/get_medicine/<int:medicine_id>', methods=['GET'], endpoint='get_medicine')
 def get_medicine(medicine_id):
     try:
         medicine = Medicine.get_by_id(mysql.connection, medicine_id)
         if medicine:
-            return jsonify({"success": True, "medicine": medicine.serialize()}), 200
+            active_ingredients = Medicine.get_active_ingredients_for_medicine(mysql.connection, medicine_id)
+            medicine_data = medicine.serialize()
+            medicine_data['active_ingredients'] = [ingredient.serialize() for ingredient in active_ingredients]
+            return jsonify({"success": True, "medicine": medicine_data}), 200
         else:
             return jsonify({"success": False, "message": "Medicine not found"}), 404
     except Exception as e:
         return jsonify({"success": False, "message": "Failed to retrieve medicine", "error": str(e)}), 500
 
+
 # Update Medicine (Update)
-@medicine_bp.route('/update_medicine/<int:medicine_id>', methods=['PUT'])
+@medicine_bp.route('/update_medicine/<int:medicine_id>', methods=['PUT'], endpoint='update_medicine')
 def update_medicine(medicine_id):
     data = request.get_json()
     public_number = data.get('public_number')
@@ -69,6 +49,7 @@ def update_medicine(medicine_id):
     form = data.get('form')
     barcode = data.get('barcode')
     equivalent_medicine_group = data.get('equivalent_medicine_group')
+    active_ingredients = data.get('active_ingredients', [])  # List of active ingredients
 
     try:
         medicine = Medicine.get_by_id(mysql.connection, medicine_id)
@@ -85,13 +66,26 @@ def update_medicine(medicine_id):
         medicine.equivalent_medicine_group = equivalent_medicine_group
 
         Medicine.update(mysql.connection, medicine)
-        return jsonify({"success": True, "message": "Medicine successfully updated", "medicine": medicine.serialize()}), 200
+
+        # Update active ingredients
+        Medicine.remove_all_active_ingredients(mysql.connection, medicine_id)
+        for ingredient in active_ingredients:
+            ingredient_name = ingredient.get('name')
+            ingredient_amount = ingredient.get('amount')
+            if ingredient_name and ingredient_amount:
+                active_ingredient_id = Medicine.add_active_ingredient(mysql.connection, ingredient_name,
+                                                                      ingredient_amount)
+                Medicine.add_medicine_active_ingredient(mysql.connection, medicine_id, active_ingredient_id)
+
+        return jsonify(
+            {"success": True, "message": "Medicine successfully updated", "medicine": medicine.serialize()}), 200
     except Exception as e:
         mysql.connection.rollback()
         return jsonify({"success": False, "message": "Failed to update medicine", "error": str(e)}), 500
 
+
 # Delete Medicine (Delete)
-@medicine_bp.route('/delete_medicine/<int:medicine_id>', methods=['DELETE'])
+@medicine_bp.route('/delete_medicine/<int:medicine_id>', methods=['DELETE'], endpoint='delete_medicine')
 def delete_medicine(medicine_id):
     try:
         medicine = Medicine.get_by_id(mysql.connection, medicine_id)
@@ -104,92 +98,154 @@ def delete_medicine(medicine_id):
         mysql.connection.rollback()
         return jsonify({"success": False, "message": "Failed to delete medicine", "error": str(e)}), 500
 
-# Record Sale by Name or Barcode (Create)
-@medicine_bp.route('/record_sale', methods=['POST'])
-def record_sale():
+
+# Register Medicine (Create)
+@medicine_bp.route('/register_medicine', methods=['POST'], endpoint='register_medicine')
+def register_medicine():
     data = request.get_json()
-    user_id = data.get('user_id')
-    identifier = data.get('identifier')  # Can be name or barcode
-    customer_name = data.get('customer_name')
-    sale_date = data.get('sale_date')
-    quantity = data.get('quantity')
+    public_number = data.get('public_number')
+    atc_code = data.get('atc_code')
+    report_type = data.get('report_type', 'NORMAL')
+    name = data.get('name')
+    brand = data.get('brand')
+    form = data.get('form')
+    barcode = data.get('barcode')
+    equivalent_medicine_group = data.get('equivalent_medicine_group')
+    active_ingredients = data.get('active_ingredients', [])  # List of active ingredients
 
-    if not all([user_id, identifier, sale_date, quantity]):
-        return jsonify({"success": False, "message": "User ID, identifier, sale date, and quantity are required"}), 400
+    if not all([public_number, atc_code, name, brand, barcode]):
+        return jsonify(
+            {"success": False, "message": "Public number, ATC code, name, brand, and barcode are required"}), 400
+
+    new_medicine = Medicine(None, public_number, atc_code, report_type, name, brand, form, barcode,
+                            equivalent_medicine_group)
 
     try:
-        Medicine.record_sale_by_name_or_barcode(mysql.connection, user_id, identifier, customer_name, sale_date, quantity)
-        return jsonify({"success": True, "message": "Sale successfully recorded"}), 201
+        medicine_id = Medicine.add(mysql.connection, new_medicine)
+        new_medicine.id = medicine_id
+
+        for ingredient in active_ingredients:
+            ingredient_name = ingredient.get('name')
+            ingredient_amount = ingredient.get('amount')
+            if ingredient_name and ingredient_amount:
+                existing_ingredient = Medicine.get_active_ingredient_by_name(mysql.connection, ingredient_name)
+                if existing_ingredient:
+                    active_ingredient_id = existing_ingredient.id
+                else:
+                    active_ingredient_id = Medicine.add_active_ingredient(mysql.connection, ingredient_name,
+                                                                          ingredient_amount)
+                Medicine.add_medicine_active_ingredient(mysql.connection, medicine_id, active_ingredient_id)
+
+        return jsonify({"success": True, "message": "Medicine successfully added to the system.",
+                        "medicine": new_medicine.serialize()}), 201
     except Exception as e:
-        return jsonify({"success": False, "message": "Failed to record sale", "error": str(e)}), 500
+        mysql.connection.rollback()
+        return jsonify({"success": False, "message": "Failed to add medicine", "error": str(e)}), 500
 
 
-
-def process_excel_file(file_path):
+# Get Active Ingredient by Name (Read)
+@medicine_bp.route('/get_active_ingredient_by_name/<string:name>', methods=['GET'])
+def get_active_ingredient_by_name(name):
     try:
-        # Read the Excel file with the correct header row
-        df = pd.read_excel(file_path, skiprows=2, nrows=100)
-
-        # Log the entire DataFrame for debugging
-        logging.debug(f"DataFrame head:\n{df.head()}")
-
-        # Log original column names for debugging
-        original_columns = df.columns.tolist()
-        logging.debug(f"Original column names: {original_columns}")
-
-        # Strip and lower case the column names
-        df.columns = df.columns.str.strip().str.lower()
-
-        # Log stripped and lower cased column names for debugging
-        stripped_columns = df.columns.tolist()
-        logging.debug(f"Stripped and lower cased column names: {stripped_columns}")
-
-        # Log each column name and its length for detailed inspection
-        for col in df.columns:
-            logging.debug(f"Column: '{col}' Length: {len(col)}")
-
-        medicines = []
-        for _, row in df.iterrows():
-            logging.debug(f"Row data: {row}")  # Log each row for debugging
-            medicine = Medicine(
-                id=None,
-                public_number=None,  # Adjust if there's a column for this, use row['column_name']
-                atc_code=row['atc kodu'].strip(),  # Ensure no leading/trailing spaces
-                report_type=row['reçete türü'].strip(),
-                name=row['ilaç adı'].strip(),
-                brand=row['firma adı'].strip(),
-                form=None,  # Adjust if there's a column for this, use row['column_name']
-                barcode=row['barkod'].strip(),
-                equivalent_medicine_group=None  # Adjust if there's a column for this, use row['column_name']
-            )
-            medicines.append(medicine)
-        return medicines
-    except KeyError as e:
-        logging.error(f"Column not found: {e}")  # Log the missing column for debugging
-        raise e
+        ingredient_name = name.strip().lower()
+        ingredient = Medicine.get_active_ingredient_by_name(mysql.connection, ingredient_name)
+        if ingredient:
+            return jsonify({"success": True, "active_ingredient": ingredient.serialize()}), 200
+        else:
+            return jsonify({"success": False, "message": "Active ingredient not found"}), 404
     except Exception as e:
-        logging.error(f"Error processing file: {e}")  # Log the error for debugging
-        raise e
+        return jsonify({"success": False, "message": "Failed to retrieve active ingredient", "error": str(e)}), 500
 
-@medicine_bp.route('/upload_excel', methods=['POST'])
-def upload_excel():
-    if 'file' not in request.files:
-        return jsonify({"success": False, "message": "No file part"}), 400
-    file = request.files['file']
-    if file.filename == '':
-        return jsonify({"success": False, "message": "No selected file"}), 400
-    if file and file.filename.endswith('.xlsx'):
-        file_path = os.path.join('/tmp', file.filename)
-        file.save(file_path)
-        try:
-            medicines = process_excel_file(file_path)
-            for medicine in medicines:
-                medicine_id = Medicine.add(mysql.connection, medicine)
-                medicine.id = medicine_id
-            return jsonify({"success": True, "message": "Medicines successfully added to the system."}), 201
-        except KeyError as e:
-            return jsonify({"success": False, "message": f"Missing column: {str(e)}"}), 400
-        except Exception as e:
-            return jsonify({"success": False, "message": "Failed to process file", "error": str(e)}), 500
-    else:
-        return jsonify({"success": False, "message": "Unsupported file format"}), 400
+
+# Get All Active Ingredients (Read)
+@medicine_bp.route('/get_all_active_ingredients', methods=['GET'], endpoint='get_all_active_ingredients')
+def get_all_active_ingredients():
+    try:
+        active_ingredients = Medicine.get_all_active_ingredients(mysql.connection)
+        return jsonify(
+            {"success": True, "active_ingredients": [ingredient.serialize() for ingredient in active_ingredients]}), 200
+    except Exception as e:
+        return jsonify({"success": False, "message": "Failed to retrieve active ingredients", "error": str(e)}), 500
+
+
+# Get Active Ingredient by ID (Read)
+@medicine_bp.route('/get_active_ingredient/<int:ingredient_id>', methods=['GET'], endpoint='get_active_ingredient')
+def get_active_ingredient(ingredient_id):
+    try:
+        ingredient = Medicine.get_active_ingredient_by_id(mysql.connection, ingredient_id)
+        if ingredient:
+            return jsonify({"success": True, "active_ingredient": ingredient.serialize()}), 200
+        else:
+            return jsonify({"success": False, "message": "Active ingredient not found"}), 404
+    except Exception as e:
+        return jsonify({"success": False, "message": "Failed to retrieve active ingredient", "error": str(e)}), 500
+@medicine_bp.route('/get_active_ingredients_of_medicine/<int:medicine_id>', methods=['GET'])
+def get_active_for_medicine(medicine_id):
+    try:
+        ingredients = Medicine.get_active_ingredients_for_medicine(mysql.connection, medicine_id)
+        if ingredients:
+            ing = [ingredient.serialize() for ingredient in ingredients]
+            return jsonify({"success": True, "active_ingredients": ing}), 200
+        else:
+            return jsonify({"success": False, "message": "No active ingredients found for this medicine"}), 404
+    except Exception as e:
+        return jsonify({"success": False, "message": "Failed to retrieve active ingredients", "error": str(e)}), 500
+
+# Add Active Ingredient (Create)
+@medicine_bp.route('/add_active_ingredient', methods=['POST'], endpoint='add_active_ingredient')
+def add_active_ingredient():
+    data = request.get_json()
+    name = data.get('name')
+    amount = data.get('amount')
+
+    if not all([name, amount]):
+        return jsonify({"success": False, "message": "Name and amount are required"}), 400
+
+    try:
+        ingredient_id = Medicine.add_active_ingredient(mysql.connection, name, amount)
+        new_ingredient = Medicine.get_active_ingredient_by_id(mysql.connection, ingredient_id)
+        return jsonify({"success": True, "message": "Active ingredient successfully added",
+                        "active_ingredient": new_ingredient.serialize()}), 201
+    except Exception as e:
+        mysql.connection.rollback()
+        return jsonify({"success": False, "message": "Failed to add active ingredient", "error": str(e)}), 500
+
+
+# Update Active Ingredient (Update)
+@medicine_bp.route('/update_active_ingredient/<int:ingredient_id>', methods=['PUT'],
+                   endpoint='update_active_ingredient')
+def update_active_ingredient(ingredient_id):
+    data = request.get_json()
+    name = data.get('name')
+    amount = data.get('amount')
+
+    try:
+        ingredient = Medicine.get_active_ingredient_by_id(mysql.connection, ingredient_id)
+        if not ingredient:
+            return jsonify({"success": False, "message": "Active ingredient not found"}), 404
+
+        ingredient.name = name
+        ingredient.amount = amount
+
+        Medicine.update_active_ingredient(mysql.connection, ingredient)
+        return jsonify({"success": True, "message": "Active ingredient successfully updated",
+                        "active_ingredient": ingredient.serialize()}), 200
+    except Exception as e:
+        mysql.connection.rollback()
+        return jsonify({"success": False, "message": "Failed to update active ingredient", "error": str(e)}), 500
+
+
+# Delete Active Ingredient (Delete)
+@medicine_bp.route('/delete_active_ingredient/<int:ingredient_id>', methods=['DELETE'],
+                   endpoint='delete_active_ingredient')
+def delete_active_ingredient(ingredient_id):
+    try:
+        ingredient = Medicine.get_active_ingredient_by_id(mysql.connection, ingredient_id)
+        if not ingredient:
+            return jsonify({"success": False, "message": "Active ingredient not found"}), 404
+
+        Medicine.delete_active_ingredient(mysql.connection, ingredient_id)
+        return jsonify({"success": True, "message": "Active ingredient successfully deleted"}), 200
+    except Exception as e:
+        mysql.connection.rollback()
+        return jsonify({"success": False, "message": "Failed to delete active ingredient", "error": str(e)}), 500
