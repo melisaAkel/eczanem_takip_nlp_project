@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Mockup</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="d-flex">
+        <!-- Sidebar -->
+        <nav class="bg-dark text-white p-3" id="sidebar">
+            <div class="sidebar-header">
+                <h3>DEFILAB</h3>
+                <div class="user-info mt-3">
+                    <img src="https://via.placeholder.com/50" class="rounded-circle" alt="User Image">
+                    <p class="mt-2">Esther Howard</p>
+                    <span class="badge badge-secondary">PRO</span>
+                </div>
+            </div>
+            <ul class="list-unstyled components mt-4">
+                <li>
+                    <a href="#" class="text-white">DeFi</a>
+                </li>
+                <li>
+                    <a href="#" class="text-white">Yields</a>
+                </li>
+                <li>
+                    <a href="#" class="text-white">DEXes</a>
+                </li>
+                <li>
+                    <a href="#" class="text-white">Protocols</a>
+                </li>
+                <li>
+                    <a href="#" class="text-white">Settings</a>
+                </li>
+                <li class="mt-5">
+                    <a href="#" class="text-white">Log out</a>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Page Content -->
+        <div id="content" class="p-4">
+            <h2>Welcome back, Esther!</h2>
+            <p>Take a look at the updated DeFi overview</p>
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <h5 class="card-title">TVL 2022</h5>
+                            <h3>$43,35B <span class="text-success">+13%</span></h3>
+                            <canvas id="tvlChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <h5 class="card-title">Change (24h)</h5>
+                            <h3 class="text-danger">-4.31%</h3>
+                            <p class="text-muted">-0.07% this month</p>
+                        </div>
+                    </div>
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <h5 class="card-title">Maker Dominance</h5>
+                            <h3>15.62% <span class="text-success">+1.31% this month</span></h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <h5 class="card-title">Top Protocols</h5>
+                            <canvas id="protocolsChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <h5 class="card-title">TVL Rankings</h5>
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Category</th>
+                                        <th>Chains</th>
+                                        <th>7D Change</th>
+                                        <th>TVL</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>MakerDAO</td>
+                                        <td>CDP</td>
+                                        <td><i class="fas fa-link"></i> <i class="fas fa-chart-line"></i></td>
+                                        <td class="text-success">+3.12%</td>
+                                        <td>$6.67B</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Convex</td>
+                                        <td>CDP</td>
+                                        <td><i class="fas fa-link"></i> <i class="fas fa-chart-line"></i></td>
+                                        <td class="text-danger">-0.07%</td>
+                                        <td>$2.27B</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Instadapp</td>
+                                        <td>CDP</td>
+                                        <td><i class="fas fa-link"></i> <i class="fas fa-chart-line"></i></td>
+                                        <td class="text-success">+0.62%</td>
+                                        <td>$1.67B</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="scripts.js"></script>
+</body>
+</html>
