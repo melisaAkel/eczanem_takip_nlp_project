@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medicine Management</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+
+        .navbar-brand img {
+            width: 50px; /* Adjusted logo size */
+            margin-right: 20px;
+        }
+
+        .card {
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        #medicinesList .list-group-item {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <a class="navbar-brand" href="#">
+            <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Pharmacy Logo" class="logo">
+            Medicine Management
+        </a>
+    </nav>
+    <div class="container mt-5">
+        <h1 class="text-center mb-4">Medicine Management</h1>
+
+        <div class="card mb-4">
+            <div class="card-header">
+                Register Medicine
+            </div>
+            <div class="card-body">
+                <form id="registerMedicineForm">
+                    <div class="form-row">
+                        <div class="form-group col-md-6">
+                            <label for="publicNumber">Public Number</label>
+                            <input type="text" class="form-control" id="publicNumber" placeholder="Public Number" required>
+                        </div>
+                        <div class="form-group col-md-6">
+                            <label for="atcCode">ATC Code</label>
+                            <input type="text" class="form-control" id="atcCode" placeholder="ATC Code" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-md-6">
+                            <label for="name">Name</label>
+                            <input type="text" class="form-control" id="name" placeholder="Name" required>
+                        </div>
+                        <div class="form-group col-md-6">
+                            <label for="brand">Brand</label>
+                            <input type="text" class="form-control" id="brand" placeholder="Brand" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-md-6">
+                            <label for="form">Form</label>
+                            <input type="text" class="form-control" id="form" placeholder="Form">
+                        </div>
+                        <div class="form-group col-md-6">
+                            <label for="barcode">Barcode</label>
+                            <input type="text" class="form-control" id="barcode" placeholder="Barcode" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="equivalentMedicineGroup">Equivalent Medicine Group</label>
+                        <input type="text" class="form-control" id="equivalentMedicineGroup" placeholder="Equivalent Medicine Group">
+                    </div>
+                    <div class="form-group">
+                        <label for="activeIngredients">Active Ingredients (JSON format)</label>
+                        <textarea class="form-control" id="activeIngredients" placeholder='[{"name": "Ingredient1", "amount": "10mg"}]'></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Register Medicine</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                All Medicines
+            </div>
+            <div class="card-body">
+                <form id="searchForm" class="form-inline mb-3">
+                    <input class="form-control mr-2" type="search" id="searchQuery" placeholder="Search by name" aria-label="Search">
+                    <button class="btn btn-outline-success" type="submit">Search</button>
+                </form>
+                <form id="barcodeSearchForm" class="form-inline mb-3">
+                    <input class="form-control mr-2" type="search" id="barcodeSearchQuery" placeholder="Search by barcode" aria-label="Search">
+                    <button class="btn btn-outline-success" type="submit">Search</button>
+                    <button class="btn btn-outline-primary ml-2" type="button" id="scanBarcode">Scan Barcode</button>
+                </form>
+                <button class="btn btn-secondary mb-3" id="fetchMedicines">Fetch Medicines</button>
+                <div id="medicinesList" class="list-group"></div>
+                <nav aria-label="Medicine pagination">
+                    <ul class="pagination justify-content-center">
+                        <li class="page-item">
+                            <button class="page-link" id="prevPage">Previous</button>
+                        </li>
+                        <li class="page-item">
+                            <button class="page-link" id="nextPage">Next</button>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/@zxing/library@latest"></script> <!-- ZXing library for barcode scanning -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            let currentPage = 1;
+            const perPage = 10;
+            let searchQuery = '';
+            let isCameraOpen = false; // To track the camera state
+            let codeReader = new ZXing.BrowserBarcodeReader();
+
+            function fetchMedicines(page, query = '') {
+                const url = query
+                    ? `http://localhost:5000/api/medicines/search_medicines?name=${query}&page=${page}&per_page=${perPage}`
+                    : `http://localhost:5000/api/medicines/get_all_medicines?page=${page}&per_page=${perPage}`;
+                fetch(url)
+                    .then(response => response.json())
+                    .then(response => {
+                        const medicinesList = document.getElementById('medicinesList');
+                        medicinesList.innerHTML = '';
+
+                        response.medicines.forEach(medicine => {
+                            const listItem = `<div class="list-group-item">
+                                <h5>${medicine.name}</h5>
+                                <p><strong>Brand:</strong> ${medicine.brand}</p>
+                                <p><strong>Barcode:</strong> ${medicine.barcode}</p>
+                                <p><strong>ATC Code:</strong> ${medicine.atc_code}</p>
+                            </div>`;
+                            medicinesList.insertAdjacentHTML('beforeend', listItem);
+                        });
+
+                        currentPage = response.page;
+                        updatePagination(response.total);
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Error: ' + error.message);
+                    });
+            }
+
+            function updatePagination(totalItems) {
+                const totalPages = Math.ceil(totalItems / perPage);
+                document.getElementById('prevPage').disabled = currentPage === 1;
+                document.getElementById('nextPage').disabled = currentPage === totalPages;
+            }
+
+            document.getElementById('registerMedicineForm').addEventListener('submit', function(event) {
+                event.preventDefault();
+
+                const data = {
+                    public_number: document.getElementById('publicNumber').value,
+                    atc_code: document.getElementById('atcCode').value,
+                    name: document.getElementById('name').value,
+                    brand: document.getElementById('brand').value,
+                    form: document.getElementById('form').value,
+                    barcode: document.getElementById('barcode').value,
+                    equivalent_medicine_group: document.getElementById('equivalentMedicineGroup').value,
+                    active_ingredients: JSON.parse(document.getElementById('activeIngredients').value || '[]')
+                };
+
+                fetch('http://localhost:5000/api/medicines/register_medicine', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                })
+                .then(response => response.json())
+                .then(response => {
+                    alert(response.message);
+                    document.getElementById('registerMedicineForm').reset();
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error: ' + error.message);
+                });
+            });
+
+            document.getElementById('fetchMedicines').addEventListener('click', function() {
+                fetchMedicines(currentPage);
+            });
+
+            document.getElementById('prevPage').addEventListener('click', function() {
+                if (currentPage > 1) {
+                    fetchMedicines(currentPage - 1, searchQuery);
+                }
+            });
+
+            document.getElementById('nextPage').addEventListener('click', function() {
+                fetchMedicines(currentPage + 1, searchQuery);
+            });
+            document.getElementById('searchForm').addEventListener('submit', function(event) {
+                event.preventDefault();
+                searchQuery = document.getElementById('searchQuery').value;
+                currentPage = 1; // Reset to first page on new search
+                fetchMedicines(currentPage, searchQuery);
+            });
+
+            document.getElementById('barcodeSearchForm').addEventListener('submit', function(event) {
+                event.preventDefault();
+                const barcodeQuery = document.getElementById('barcodeSearchQuery').value;
+                fetchMedicinesByBarcode(barcodeQuery);
+            });
+
+            function fetchMedicinesByBarcode(barcode) {
+                const url = `http://localhost:5000/api/medicines/search_by_barcode?barcode=${barcode}`;
+                fetch(url)
+                    .then(response => response.json())
+                    .then(response => {
+                        const medicinesList = document.getElementById('medicinesList');
+                        medicinesList.innerHTML = '';
+
+                        response.medicines.forEach(medicine => {
+                            const listItem = `<div class="list-group-item">
+                                <h5>${medicine.name}</h5>
+                                <p><strong>Brand:</strong> ${medicine.brand}</p>
+                                <p><strong>Barcode:</strong> ${medicine.barcode}</p>
+                                <p><strong>ATC Code:</strong> ${medicine.atc_code}</p>
+                            </div>`;
+                            medicinesList.insertAdjacentHTML('beforeend', listItem);
+                        });
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Error: ' + error.message);
+                    });
+            }
+
+            document.getElementById('scanBarcode').addEventListener('click', function() {
+                if (isCameraOpen) {
+                    codeReader.reset();
+                    videoContainer.style.display = 'none';
+                    document.getElementById('scanBarcode').classList.remove('btn-primary');
+                    document.getElementById('scanBarcode').classList.add('btn-outline-primary');
+                    isCameraOpen = false;
+                } else {
+                    videoContainer.style.display = 'block';
+                    codeReader.decodeOnceFromVideoDevice(undefined, 'video')
+                        .then(result => {
+                            document.getElementById('barcodeSearchQuery').value = result.text;
+                            fetchMedicinesByBarcode(result.text);
+                            codeReader.reset();
+                            videoContainer.style.display = 'none';
+                            document.getElementById('scanBarcode').classList.remove('btn-primary');
+                            document.getElementById('scanBarcode').classList.add('btn-outline-primary');
+                            isCameraOpen = false;
+                        })
+                        .catch(err => {
+                            console.error(err);
+                            videoContainer.style.display = 'none';
+                            document.getElementById('scanBarcode').classList.remove('btn-primary');
+                            document.getElementById('scanBarcode').classList.add('btn-outline-primary');
+                            isCameraOpen = false;
+                        });
+                    document.getElementById('scanBarcode').classList.remove('btn-outline-primary');
+                    document.getElementById('scanBarcode').classList.add('btn-primary');
+                    isCameraOpen = true;
+                }
+            });
+
+            // Create a video element for barcode scanning
+            const videoContainer = document.createElement('div');
+            videoContainer.style.position = 'relative';
+            videoContainer.innerHTML = '<video id="video" width="300" height="200" style="border: 1px solid gray"></video>';
+            document.body.appendChild(videoContainer);
+            videoContainer.style.display = 'none'; // Hide the video element by default
+        });
+    </script>
+</body>
+</html>
+

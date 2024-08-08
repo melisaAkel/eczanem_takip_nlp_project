@@ -39,12 +39,22 @@ class Medicine:
         }
 
     @staticmethod
-    def get_all(connection):
-        cursor = connection.cursor(MySQLdb.cursors.DictCursor)
-        cursor.execute("SELECT * FROM medicine")
-        rows = cursor.fetchall()
+    def get_all(connection, limit=10, offset=0):
+        cursor = connection.cursor()
+        query = "SELECT * FROM medicine LIMIT %s OFFSET %s"
+        cursor.execute(query, (limit, offset))
+        result = cursor.fetchall()
         cursor.close()
-        return [Medicine(**row) for row in rows]
+        return [Medicine(*row) for row in result]
+
+    @staticmethod
+    def count_all(connection):
+        cursor = connection.cursor()
+        query = "SELECT COUNT(*) FROM medicine"
+        cursor.execute(query)
+        result = cursor.fetchone()
+        cursor.close()
+        return result[0]
 
     @staticmethod
     def get_by_id(connection, medicine_id):
@@ -67,6 +77,15 @@ class Medicine:
         return None
 
     @staticmethod
+    def search_by_barcode(connection, barcode):
+        cursor = connection.cursor()
+        query = "SELECT * FROM medicine WHERE barcode = %s"
+        cursor.execute(query, (barcode,))
+        result = cursor.fetchall()
+        cursor.close()
+        return [Medicine(*row) for row in result]
+
+    @staticmethod
     def add(connection, medicine):
         cursor = connection.cursor()
         cursor.execute("""
@@ -79,6 +98,23 @@ class Medicine:
         cursor.close()
         return medicine_id
 
+    @staticmethod
+    def search_by_name(connection, name, limit=10, offset=0):
+        cursor = connection.cursor()
+        query = "SELECT * FROM medicine WHERE name LIKE %s LIMIT %s OFFSET %s"
+        cursor.execute(query, (f"%{name}%", limit, offset))
+        result = cursor.fetchall()
+        cursor.close()
+        return [Medicine(*row) for row in result]
+
+    @staticmethod
+    def count_by_name(connection, name):
+        cursor = connection.cursor()
+        query = "SELECT COUNT(*) FROM medicine WHERE name LIKE %s"
+        cursor.execute(query, (f"%{name}%",))
+        result = cursor.fetchone()
+        cursor.close()
+        return result[0]
     @staticmethod
     def update(connection, medicine):
         cursor = connection.cursor()

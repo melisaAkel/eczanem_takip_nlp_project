@@ -2,10 +2,22 @@ from flask import Blueprint, request, jsonify, render_template
 from flask_mysqldb import MySQL
 from models.User import User
 from flask_cors import CORS
+
 mysql = MySQL()
 
 user_bp = Blueprint('user', __name__)
 CORS(user_bp)
+
+
+@user_bp.route('/register_page', methods=['GET'])
+def register_page():
+    return render_template("pharmacy_register.html")
+
+
+@user_bp.route('login_page')
+def login_page():
+    return render_template('pharmacy_user_login_page.html')
+
 
 @user_bp.route('/login', methods=['POST'])
 def login():

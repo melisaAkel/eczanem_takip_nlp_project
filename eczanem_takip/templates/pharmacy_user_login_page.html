@@ -76,15 +76,15 @@
 </head>
 <body>
     <div class="login-container">
-        <img src="{{url_for('images', filename ='logo.png')}}" alt="Pharmacy Logo" class="logo">
-        <h1>Pharmacy Inventory Login</h1>
+        <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Pharmacy Logo" class="logo">
+        <h1>Giriş Sayfası</h1>
         <form id="loginForm">
-            <input type="text" id="usernameoremail" placeholder="Username or Email" required>
-            <input type="password" id="password" placeholder="Password" required>
-            <button type="submit">Login</button>
+            <input type="text" id="usernameoremail" placeholder="Username veya Email" required>
+            <input type="password" id="password" placeholder="Şifre" required>
+            <button type="submit">Giriş Yap</button>
         </form>
         <div class="link">
-            <a href="pharmacy_register.html">Kayıt Ol</a>
+            <a href="register_page">Kayıt Ol</a>
         </div>
         <div class="footer">
             &copy; 2024 Pharmacy Inventory Management

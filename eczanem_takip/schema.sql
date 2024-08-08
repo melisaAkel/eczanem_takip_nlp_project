@@ -26,12 +26,12 @@ CREATE TABLE supplier (
 CREATE TABLE medicine (
     id INT AUTO_INCREMENT PRIMARY KEY,
     public_number VARCHAR(80) NOT NULL,
-    atc_code VARCHAR(80) NOT NULL,
+    atc_code VARCHAR(200) NOT NULL,
     report_type ENUM('KIRMIZI', 'MOR','TURUNCU', 'YEŞİL', 'NORMAL') DEFAULT 'NORMAL',
-    name VARCHAR(80) NOT NULL,
-    brand VARCHAR(80) NOT NULL,
-    form VARCHAR(80),
-    barcode VARCHAR(80) NOT NULL UNIQUE,
+    name VARCHAR(200) NOT NULL,
+    brand VARCHAR(200) NOT NULL,
+    form VARCHAR(200),
+    barcode VARCHAR(200) NOT NULL UNIQUE,
     equivalent_medicine_group VARCHAR(80)
 );
 
@@ -128,3 +128,5 @@ BEGIN
 END //
 
 DELIMITER ;
+ALTER DATABASE eczanemtakipdb CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
+ALTER TABLE medicine CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;

@@ -1,6 +1,6 @@
 import os
 import logging
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, render_template
 from flask_mysqldb import MySQL
 from models.Medicine import Medicine  # Import the Medicine class from your models
 import pandas as pd
@@ -11,14 +11,76 @@ logging.basicConfig(filename='/tmp/medicine_processing.log', level=logging.DEBUG
 medicine_bp = Blueprint('medicine', __name__)
 
 
+@medicine_bp.route('/register_medicine_page', methods=['GET'])
+def register_medicine_page():
+    return render_template('register_medicine.html')
+
+
 # Get All Medicines (Read)
 @medicine_bp.route('/get_all_medicines', methods=['GET'])
 def get_all_medicines():
     try:
-        medicines = Medicine.get_all(mysql.connection)
-        return jsonify({"success": True, "medicines": [medicine.serialize() for medicine in medicines]}), 200
+        # Get query parameters for pagination
+        page = int(request.args.get('page', 1))
+        per_page = int(request.args.get('per_page', 10))
+
+        # Calculate offset for pagination
+        offset = (page - 1) * per_page
+
+        # Retrieve medicines with pagination
+        medicines = Medicine.get_all(mysql.connection, limit=per_page, offset=offset)
+        total_medicines = Medicine.count_all(mysql.connection)  # Assuming a method to count all medicines
+
+        return jsonify({
+            "success": True,
+            "medicines": [medicine.serialize() for medicine in medicines],
+            "page": page,
+            "per_page": per_page,
+            "total": total_medicines
+        }), 200
     except Exception as e:
         return jsonify({"success": False, "message": "Failed to retrieve medicines", "error": str(e)}), 500
+
+
+@medicine_bp.route('/search_by_barcode', methods=['GET'])
+def search_by_barcode():
+    try:
+        barcode = request.args.get('barcode', '')
+        medicines = Medicine.search_by_barcode(mysql.connection, barcode)
+        return jsonify({
+            "success": True,
+            "medicines": [medicine.serialize() for medicine in medicines]
+        }), 200
+    except Exception as e:
+        return jsonify({"success": False, "message": "Failed to search medicines by barcode", "error": str(e)}), 500
+
+
+@medicine_bp.route('/search_medicines', methods=['GET'])
+def search_medicines():
+    try:
+        # Get query parameters for search and pagination
+        name_query = request.args.get('name', '')
+        page = int(request.args.get('page', 1))
+        per_page = int(request.args.get('per_page', 10))
+
+        # Calculate offset for pagination
+        offset = (page - 1) * per_page
+
+        # Search medicines with pagination
+        medicines = Medicine.search_by_name(mysql.connection, name_query, limit=per_page, offset=offset)
+        total_medicines = Medicine.count_by_name(mysql.connection,
+                                                 name_query)  # Assuming a method to count search results
+
+        return jsonify({
+            "success": True,
+            "medicines": [medicine.serialize() for medicine in medicines],
+            "page": page,
+            "per_page": per_page,
+            "total": total_medicines
+        }), 200
+    except Exception as e:
+        return jsonify({"success": False, "message": "Failed to search medicines", "error": str(e)}), 500
+
 
 
 # Get Medicine by ID (Read)
@@ -141,8 +203,65 @@ def register_medicine():
     except Exception as e:
         mysql.connection.rollback()
         return jsonify({"success": False, "message": "Failed to add medicine", "error": str(e)}), 500
+VALID_REPORT_TYPES = {'KIRMIZI', 'MOR', 'TURUNCU', 'YEŞİL', 'NORMAL'}
 
+@medicine_bp.route('/register_medicine_from_excel', methods=['POST'], endpoint='register_medicine_from_excel')
+def register_medicine_from_excel():
+    # Load the Excel file
+    file = request.files['file']
+    excel_data = pd.read_excel(file)
 
+    # Replace NaN values with defaults
+    excel_data.fillna({
+        'Barkod': '',
+        'ATC Kodu': '',
+        'Reçete Türü': 'NORMAL',
+        'İlaç Adı': '',
+        'Firma Adı': '',
+        'Form': '',
+        'Equivalent Medicine Group': '',
+        'Active Ingredients': []
+    }, inplace=True)
+
+    for index, row in excel_data.iterrows():
+        public_number = row['Barkod']
+        atc_code = row['ATC Kodu']
+        report_type = row['Reçete Türü'].upper()  # Ensure the value is uppercase
+        report_type = report_type if report_type in VALID_REPORT_TYPES else 'NORMAL'
+        name = row['İlaç Adı'][:200]  # Truncate to match the database column length
+        brand = row['Firma Adı'][:200]  # Truncate to match the database column length
+        form = row.get('Form', '')[:200]  # Assuming 'Form' column exists in the Excel and truncating
+        barcode = row['Barkod']
+        equivalent_medicine_group = row.get('Equivalent Medicine Group', '')[:80]  # Assuming column name and truncating
+        active_ingredients = row.get('Active Ingredients', [])  # Assuming column name
+
+        if not all([public_number, atc_code, name, brand, barcode]):
+            continue  # Skip rows with missing required fields
+
+        new_medicine = Medicine(None, public_number, atc_code, report_type, name, brand, form, barcode,
+                                equivalent_medicine_group)
+
+        try:
+            medicine_id = Medicine.add(mysql.connection, new_medicine)
+            new_medicine.id = medicine_id
+
+            for ingredient in active_ingredients:
+                ingredient_name = ingredient.get('name')
+                ingredient_amount = ingredient.get('amount')
+                if ingredient_name and ingredient_amount:
+                    existing_ingredient = Medicine.get_active_ingredient_by_name(mysql.connection, ingredient_name)
+                    if existing_ingredient:
+                        active_ingredient_id = existing_ingredient.id
+                    else:
+                        active_ingredient_id = Medicine.add_active_ingredient(mysql.connection, ingredient_name,
+                                                                              ingredient_amount)
+                    Medicine.add_medicine_active_ingredient(mysql.connection, medicine_id, active_ingredient_id)
+
+        except Exception as e:
+            mysql.connection.rollback()
+            return jsonify({"success": False, "message": "Failed to add some medicines", "error": str(e)}), 500
+
+    return jsonify({"success": True, "message": "All medicines successfully added to the system."}), 201
 # Get Active Ingredient by Name (Read)
 @medicine_bp.route('/get_active_ingredient_by_name/<string:name>', methods=['GET'])
 def get_active_ingredient_by_name(name):
@@ -179,6 +298,8 @@ def get_active_ingredient(ingredient_id):
             return jsonify({"success": False, "message": "Active ingredient not found"}), 404
     except Exception as e:
         return jsonify({"success": False, "message": "Failed to retrieve active ingredient", "error": str(e)}), 500
+
+
 @medicine_bp.route('/get_active_ingredients_of_medicine/<int:medicine_id>', methods=['GET'])
 def get_active_for_medicine(medicine_id):
     try:
@@ -190,6 +311,7 @@ def get_active_for_medicine(medicine_id):
             return jsonify({"success": False, "message": "No active ingredients found for this medicine"}), 404
     except Exception as e:
         return jsonify({"success": False, "message": "Failed to retrieve active ingredients", "error": str(e)}), 500
+
 
 # Add Active Ingredient (Create)
 @medicine_bp.route('/add_active_ingredient', methods=['POST'], endpoint='add_active_ingredient')
