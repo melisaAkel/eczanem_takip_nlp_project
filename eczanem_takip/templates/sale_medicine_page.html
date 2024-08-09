@@ -155,6 +155,7 @@
                             <table class="table table-bordered" id="saleTable">
                                 <thead>
                                     <tr>
+                                        <th>Select</th>
                                         <th>Medicine Name</th>
                                         <th>Supplier Name</th>
                                         <th>Barcode</th>
@@ -246,16 +247,17 @@
                         tbody.empty();
 
                         if (response.success) {
-                            const medicines = response.medicines;
-                            medicines.forEach(medicine => {
+                            const stocks = response.stocks;
+                            stocks.forEach(stock => {
                                 const row = `
                                     <tr>
-                                        <td>${medicine.medicine_name}</td>
-                                        <td>${medicine.supplier_name}</td>
-                                        <td>${medicine.medicine_barcode || '-'}</td>
-                                        <td>${medicine.expiry_date}</td>
-                                        <td>${medicine.quantity}</td>
-                                        <td><input type="number" class="form-control quantity-input" min="0" max="${medicine.quantity}" data-medicine-id="${medicine.id}" placeholder="Quantity"></td>
+                                        <td><input type="checkbox" class="select-medicine" data-medicine-id="${stock.id}"></td>
+                                        <td>${stock.medicine_name}</td>
+                                        <td>${stock.supplier_name}</td>
+                                        <td>${stock.medicine_barcode || '-'}</td>
+                                        <td>${stock.expiry_date}</td>
+                                        <td>${stock.quantity}</td>
+                                        <td><input type="number" class="form-control quantity-input" min="0" max="${stock.quantity}" data-medicine-id="${stock.id}" placeholder="Quantity"></td>
                                     </tr>
                                 `;
                                 tbody.append(row);
@@ -304,13 +306,16 @@
             $('#proceedButton').click(function() {
                 selectedMedicines = [];
                 $('#saleTable tbody tr').each(function() {
-                    const quantityInput = $(this).find('.quantity-input');
-                    const quantity = quantityInput.val();
-                    const medicineId = quantityInput.data('medicine-id');
+                    const checkbox = $(this).find('.select-medicine');
+                    if (checkbox.is(':checked')) {
+                        const quantityInput = $(this).find('.quantity-input');
+                        const quantity = quantityInput.val();
+                        const medicineId = checkbox.data('medicine-id');
 
-                    if (quantity && quantity > 0) {
-                        const medicineName = $(this).find('td:first').text();
-                        selectedMedicines.push({ id: medicineId, name: medicineName, quantity: quantity });
+                        if (quantity && quantity > 0) {
+                            const medicineName = $(this).find('td:nth-child(2)').text();
+                            selectedMedicines.push({ id: medicineId, name: medicineName, quantity: quantity });
+                        }
                     }
                 });
 
@@ -343,11 +348,11 @@
 
                 const promises = selectedMedicines.map(medicine => {
                     return $.ajax({
-                        url: '/api/stock/record_sale',
+                        url: 'http://localhost:5000/api/stock/record_sale',
                         method: 'POST',
                         contentType: 'application/json',
                         data: JSON.stringify({
-                            user_id: userId,
+                            user_id: 1,
                             medicine_id: medicine.id,
                             customer_name: customerName,
                             sale_date: saleDate,
