@@ -126,19 +126,11 @@ def record_sale():
             if current_stock_quantity >= required_quantity:
                 # Update the stock with the remaining quantity
                 new_quantity = current_stock_quantity - required_quantity
-                cursor.execute("""
-                    UPDATE medicine_stock
-                    SET quantity = %s
-                    WHERE id = %s
-                """, (new_quantity, current_stock_id))
+                
                 required_quantity = 0
             else:
                 # Reduce the stock to 0
-                cursor.execute("""
-                    UPDATE medicine_stock
-                    SET quantity = 0
-                    WHERE id = %s
-                """, (current_stock_id,))
+
                 required_quantity -= current_stock_quantity
 
         # Record sale

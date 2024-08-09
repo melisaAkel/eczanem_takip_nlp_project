@@ -347,6 +347,14 @@
                 const saleDate = new Date().toISOString().split('T')[0]; // Get today's date
 
                 const promises = selectedMedicines.map(medicine => {
+                    console.log('Sending sale data:', {
+            user_id: userId,
+            medicine_id: medicine.id,
+            customer_name: customerName,
+            sale_date: saleDate,
+            quantity: parseInt(medicine.quantity, 10)
+        });
+
                     return $.ajax({
                         url: 'http://localhost:5000/api/stock/record_sale',
                         method: 'POST',
@@ -356,7 +364,7 @@
                             medicine_id: medicine.id,
                             customer_name: customerName,
                             sale_date: saleDate,
-                            quantity: medicine.quantity
+                            quantity: parseInt(medicine.quantity, 10)
                         })
                     });
                 });
