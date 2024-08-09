@@ -1,5 +1,5 @@
 import MySQLdb
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, render_template
 from flask_mysqldb import MySQL
 from models.Medicine import Medicine
 
@@ -30,7 +30,9 @@ def add_stock():
         return jsonify({"success": False, "message": "Failed to add stock", "error": str(e)}), 500
     finally:
         cursor.close()
-
+@stock_bp.route("/buy_stock_page", methods=['GET'])
+def buy_stock_page():
+    return render_template("buy_stock.html")
 # Delete Stock (Delete)
 @stock_bp.route('/delete_stock/<int:stock_id>', methods=['DELETE'])
 def delete_stock(stock_id):
@@ -82,6 +84,10 @@ def get_stock_by_medicine(medicine_id):
     except Exception as e:
         return jsonify({"success": False, "message": "Failed to retrieve stock", "error": str(e)}), 500
 
+@stock_bp.route('/sale_medicine_page')
+def sale_medicine_page():
+    return render_template('sale_medicine_page.html')
+
 @stock_bp.route('/record_sale', methods=['POST'])
 def record_sale():
     data = request.get_json()
@@ -118,8 +124,21 @@ def record_sale():
             current_stock_quantity = record['quantity']
 
             if current_stock_quantity >= required_quantity:
+                # Update the stock with the remaining quantity
+                new_quantity = current_stock_quantity - required_quantity
+                cursor.execute("""
+                    UPDATE medicine_stock
+                    SET quantity = %s
+                    WHERE id = %s
+                """, (new_quantity, current_stock_id))
                 required_quantity = 0
             else:
+                # Reduce the stock to 0
+                cursor.execute("""
+                    UPDATE medicine_stock
+                    SET quantity = 0
+                    WHERE id = %s
+                """, (current_stock_id,))
                 required_quantity -= current_stock_quantity
 
         # Record sale
@@ -137,3 +156,101 @@ def record_sale():
 
     finally:
         cursor.close()
+
+
+
+@stock_bp.route("/view_stock_page", methods=['GET'])
+def view_stock_page():
+    return render_template("view_stock.html")
+
+
+@stock_bp.route('/filter_stock', methods=['GET'])
+def filter_stock():
+    user_id = request.args.get('user_id')
+    supplier_name = request.args.get('supplier_name')
+    medicine_name = request.args.get('medicine_name')
+    barcode = request.args.get('barcode')
+    expiry_date = request.args.get('expiry_date')
+    page = int(request.args.get('page', 1))  # Default to page 1
+    per_page = int(request.args.get('per_page', 10))  # Default to 10 items per page
+
+    offset = (page - 1) * per_page
+
+    query = """
+        SELECT ms.*, m.name AS medicine_name, m.barcode AS medicine_barcode, s.name AS supplier_name
+        FROM medicine_stock ms
+        JOIN medicine m ON ms.medicine_id = m.id
+        JOIN supplier s ON ms.supplier_id = s.id
+        WHERE ms.user_id = %s
+    """
+    query_params = [user_id]
+
+    if supplier_name:
+        query += " AND s.name LIKE %s"
+        query_params.append(f"%{supplier_name}%")
+
+    if medicine_name:
+        query += " AND m.name LIKE %s"
+        query_params.append(f"%{medicine_name}%")
+
+    if barcode:
+        query += " AND m.barcode = %s"
+        query_params.append(barcode)
+
+    if expiry_date:
+        query += " AND ms.expiry_date <= %s"
+        query_params.append(expiry_date)
+
+    query += " ORDER BY m.name ASC LIMIT %s OFFSET %s"
+    query_params.extend([per_page, offset])
+
+    try:
+        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        cursor.execute(query, query_params)
+        filtered_stocks = cursor.fetchall()
+
+        # Count total items for pagination
+        count_query = """
+            SELECT COUNT(*) as total
+            FROM medicine_stock ms
+            JOIN medicine m ON ms.medicine_id = m.id
+            JOIN supplier s ON ms.supplier_id = s.id
+            WHERE ms.user_id = %s
+        """
+        count_query_params = [user_id]
+
+        if supplier_name:
+            count_query += " AND s.name LIKE %s"
+            count_query_params.append(f"%{supplier_name}%")
+
+        if medicine_name:
+            count_query += " AND m.name LIKE %s"
+            count_query_params.append(f"%{medicine_name}%")
+
+        if barcode:
+            count_query += " AND m.barcode = %s"
+            count_query_params.append(barcode)
+
+        if expiry_date:
+            count_query += " AND ms.expiry_date <= %s"
+            count_query_params.append(expiry_date)
+
+        cursor.execute(count_query, count_query_params)
+        total_items = cursor.fetchone()['total']
+        cursor.close()
+
+        total_pages = (total_items + per_page - 1) // per_page  # Calculate total pages
+
+        return jsonify({
+            "success": True,
+            "stocks": filtered_stocks,
+            "pagination": {
+                "current_page": page,
+                "per_page": per_page,
+                "total_items": total_items,
+                "total_pages": total_pages
+            }
+        }), 200
+
+    except Exception as e:
+        return jsonify({"success": False, "message": "Failed to filter stocks", "error": str(e)}), 500

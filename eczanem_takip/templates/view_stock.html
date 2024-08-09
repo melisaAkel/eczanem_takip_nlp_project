@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>View Stock</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: Arial, sans-serif;
+        }
+
+        .navbar-brand img {
+            width: 50px;
+            margin-right: 20px;
+        }
+
+        .wrapper {
+            display: flex;
+            width: 100%;
+        }
+
+        .sidebar {
+            width: 220px;
+            background-color: #343a40;
+            color: #fff;
+            min-height: 100vh;
+            padding-top: 20px;
+        }
+
+        .sidebar a {
+            color: #adb5bd;
+            text-decoration: none;
+            display: block;
+            padding: 15px;
+            font-size: 18px;
+        }
+
+        .sidebar a:hover {
+            background-color: #495057;
+            color: #fff;
+        }
+
+        .content {
+            width: 100%;
+            padding: 20px;
+        }
+
+        .card {
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+
+        .card-header {
+            background-color: #343a40;
+            color: #fff;
+        }
+
+        .filter-section {
+            margin-bottom: 20px;
+        }
+
+        .filter-section input,
+        .filter-section select {
+            margin-bottom: 10px;
+        }
+
+        #stockTable thead {
+            background-color: #343a40;
+            color: #fff;
+        }
+
+        #stockTable tbody tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+
+        .btn-primary {
+            background-color: #343a40;
+            border-color: #343a40;
+        }
+
+        .btn-primary:hover {
+            background-color: #23272b;
+            border-color: #23272b;
+        }
+
+        .pagination-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .page-link {
+            color: #343a40;
+        }
+
+        .page-link:hover {
+            color: #23272b;
+        }
+    </style>
+</head>
+<body>
+    <div class="wrapper">
+        <div class="sidebar">
+            <h4 class="text-center">Pharmacy App</h4>
+            <a href="#">Dashboard</a>
+            <a href="#">View Stock</a>
+            <a href="#">Manage Stock</a>
+            <a href="#">Sales Records</a>
+            <a href="#">Suppliers</a>
+            <a href="#">Settings</a>
+        </div>
+        <div class="content">
+            <nav class="navbar navbar-expand-lg navbar-light bg-light">
+                <a class="navbar-brand" href="#">
+                    <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Pharmacy Logo" class="logo">
+                    View Stock
+                </a>
+            </nav>
+            <div class="container">
+                <div class="card">
+                    <div class="card-header">
+                        Filter Stock
+                    </div>
+                    <div class="card-body">
+                        <div class="filter-section">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <input type="text" id="supplierName" class="form-control" placeholder="Supplier Name">
+                                </div>
+                                <div class="col-md-4">
+                                    <input type="text" id="medicineName" class="form-control" placeholder="Medicine Name">
+                                </div>
+                                <div class="col-md-4">
+                                    <input type="text" id="barcode" class="form-control" placeholder="Barcode">
+                                </div>
+                            </div>
+                            <div class="row mt-3">
+                                <div class="col-md-4">
+                                    <input type="date" id="expiryDate" class="form-control">
+                                </div>
+                                <div class="col-md-4">
+                                    <button id="filterStock" class="btn btn-primary btn-block">Filter Stock</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-bordered" id="stockTable">
+                                <thead>
+                                    <tr>
+                                        <th>Medicine Name</th>
+                                        <th>Supplier Name</th>
+                                        <th>Barcode</th>
+                                        <th>Expiry Date</th>
+                                        <th>Quantity</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Stock records will be inserted here -->
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="pagination-container">
+                            <ul class="pagination">
+                                <li class="page-item"><a class="page-link" href="#" id="prevPage">Previous</a></li>
+                                <li class="page-item"><a class="page-link" href="#" id="nextPage">Next</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            let currentPage = 1;
+            const perPage = 10;
+
+            // Function to fetch and display filtered stock records with pagination
+            function fetchStock(page = 1) {
+                const userId = 1; // Assuming user ID is 1, change accordingly
+                const supplierName = $('#supplierName').val();
+                const medicineName = $('#medicineName').val();
+                const barcode = $('#barcode').val();
+                const expiryDate = $('#expiryDate').val();
+
+                $.ajax({
+                    url: `/api/stock/filter_stock`,
+                    method: 'GET',
+                    data: {
+                        user_id: userId,
+                        supplier_name: supplierName,
+                        medicine_name: medicineName,
+                        barcode: barcode,
+                        expiry_date: expiryDate,
+                        page: page,
+                        per_page: perPage
+                    },
+                    success: function(response) {
+                        const tbody = $('#stockTable tbody');
+                        tbody.empty();
+
+                        if (response.success) {
+                            const stocks = response.stocks;
+                            stocks.forEach(stock => {
+                                const row = `
+                                    <tr>
+                                        <td>${stock.medicine_name}</td>
+                                        <td>${stock.supplier_name}</td>
+                                        <td>${stock.medicine_barcode || '-'}</td>
+                                        <td>${stock.expiry_date}</td>
+                                        <td>${stock.quantity}</td>
+                                    </tr>
+                                `;
+                                tbody.append(row);
+                            });
+
+                            updatePagination(response.pagination);
+                        } else {
+                            alert(response.message);
+                        }
+                    },
+                    error: function(error) {
+                        console.error('Error fetching stock:', error);
+                        alert('Failed to fetch stock records. Please try again.');
+                    }
+                });
+            }
+
+            // Function to update pagination controls
+            function updatePagination(pagination) {
+                $('#prevPage').parent().toggleClass('disabled', pagination.current_page === 1);
+                $('#nextPage').parent().toggleClass('disabled', pagination.current_page === pagination.total_pages);
+            }
+
+            // Event listener for pagination controls
+            $('#prevPage').click(function(event) {
+                event.preventDefault();
+                if (currentPage > 1) {
+                    currentPage--;
+                    fetchStock(currentPage);
+                }
+            });
+
+            $('#nextPage').click(function(event) {
+                event.preventDefault();
+                currentPage++;
+                fetchStock(currentPage);
+            });
+
+            // Filter stock when the button is clicked
+            $('#filterStock').click(function() {
+                currentPage = 1;  // Reset to first page when filters are applied
+                fetchStock(currentPage);
+            });
+
+            // Fetch all stock records on page load
+            fetchStock(currentPage);
+        });
+    </script>
+</body>
+</html>

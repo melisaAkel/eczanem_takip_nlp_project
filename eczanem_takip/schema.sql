@@ -62,7 +62,7 @@ CREATE TABLE medicine_stock (
     medicine_id INT NOT NULL,
     supplier_id INT NOT NULL,
     user_id INT NOT NULL,
-    expiry_date DATE NOT NULL,
+    expiry_date DATE,
     quantity INT NOT NULL,
     FOREIGN KEY (medicine_id) REFERENCES medicine(id) ON DELETE CASCADE,
     FOREIGN KEY (supplier_id) REFERENCES supplier(id),
