@@ -30,10 +30,7 @@ def add_stock():
         return jsonify({"success": False, "message": "Failed to add stock", "error": str(e)}), 500
     finally:
         cursor.close()
-@stock_bp.route("/buy_stock_page", methods=['GET'])
-def buy_stock_page():
-    return render_template("buy_stock.html")
-# Delete Stock (Delete)
+
 @stock_bp.route('/delete_stock/<int:stock_id>', methods=['DELETE'])
 def delete_stock(stock_id):
     try:
@@ -84,9 +81,81 @@ def get_stock_by_medicine(medicine_id):
     except Exception as e:
         return jsonify({"success": False, "message": "Failed to retrieve stock", "error": str(e)}), 500
 
-@stock_bp.route('/sale_medicine_page')
-def sale_medicine_page():
-    return render_template('sale_medicine_page.html')
+
+@stock_bp.route('/view_sales', methods=['GET'])
+def view_sales():
+    try:
+        # Get query parameters
+        page = int(request.args.get('page', 1))
+        per_page = int(request.args.get('per_page', 10))
+        offset = (page - 1) * per_page
+
+        medicine_name = request.args.get('medicine_name', '').strip()
+        customer_name = request.args.get('customer_name', '').strip()
+        start_date = request.args.get('start_date', '').strip()
+        end_date = request.args.get('end_date', '').strip()
+        min_quantity = request.args.get('min_quantity', '').strip()
+        max_quantity = request.args.get('max_quantity', '').strip()
+
+        # Base query
+        query = """
+            SELECT ms.id, m.name AS medicine_name, ms.customer_name, ms.sale_date, ms.quantity
+            FROM medicine_sales ms
+            JOIN medicine m ON ms.medicine_id = m.id
+            WHERE 1=1
+        """
+        params = []
+
+        # Add filters to the query
+        if medicine_name:
+            query += " AND m.name LIKE %s"
+            params.append(f"%{medicine_name}%")
+
+        if customer_name:
+            query += " AND ms.customer_name LIKE %s"
+            params.append(f"%{customer_name}%")
+
+        if start_date:
+            query += " AND ms.sale_date >= %s"
+            params.append(start_date)
+
+        if end_date:
+            query += " AND ms.sale_date <= %s"
+            params.append(end_date)
+
+        if min_quantity:
+            query += " AND ms.quantity >= %s"
+            params.append(min_quantity)
+
+        if max_quantity:
+            query += " AND ms.quantity <= %s"
+            params.append(max_quantity)
+
+        query += " LIMIT %s OFFSET %s"
+        params.append(per_page)
+        params.append(offset)
+
+        cursor = mysql.connection.cursor()
+        cursor.execute(query, tuple(params))
+        sales = cursor.fetchall()
+
+        sales_list = [
+            {
+                "id": sale[0],
+                "medicine_name": sale[1],
+                "customer_name": sale[2],
+                "sale_date": sale[3],
+                "quantity": sale[4]
+            }
+            for sale in sales
+        ]
+
+        cursor.close()
+
+        return jsonify({"success": True, "sales": sales_list}), 200
+
+    except Exception as e:
+        return jsonify({"success": False, "message": "Failed to fetch sales", "error": str(e)}), 500
 
 @stock_bp.route('/record_sale', methods=['POST'])
 def record_sale():
@@ -150,10 +219,6 @@ def record_sale():
         cursor.close()
 
 
-
-@stock_bp.route("/view_stock_page", methods=['GET'])
-def view_stock_page():
-    return render_template("view_stock.html")
 
 
 @stock_bp.route('/filter_stock', methods=['GET'])

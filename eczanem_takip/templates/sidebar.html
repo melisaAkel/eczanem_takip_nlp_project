@@ -1,0 +1,59 @@
+<!-- sidebar.html -->
+<div class="sidebar">
+    <a href="{{ url_for('route.dashboard') }}">
+        <i class="bi bi-house-door"></i> Anasayfa
+    </a>
+    <a href="{{ url_for('route.sale_medicine') }}">
+        <i class="bi bi-cart"></i> Satış Yap
+    </a>
+    <a href="{{ url_for('route.add_stock_p') }}">
+        <i class="bi bi-box-arrow-in-down"></i> Satın Al
+    </a>
+    <a href="{{ url_for('route.view_stock') }}">
+        <i class="bi bi-archive"></i> Stok Gör
+    </a>
+    <a href="{{ url_for('route.sales_analysis') }}">
+        <i class="bi bi-graph-up"></i> Satış Analizi
+    </a>
+    <a href="{{ url_for('route.view_sales') }}">
+        <i class="bi bi-file-earmark-text"></i> Tüm Satışlar
+    </a>
+</div>
+
+<style>
+    .sidebar {
+        height: 80%;
+        width: 250px;
+        position: fixed;
+        top: 3cm;
+        left: 0;
+        margin-left: 10px;
+        border-radius: 30px;
+        background-color: white;
+        padding-top: 20px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Sidebar shadow */
+    }
+
+    .sidebar a {
+        padding: 20px 20px;
+        text-decoration: none;
+        font-size: 22px;
+        color: darkgray;
+        display: flex;
+        align-items: center; /* Align icon and text vertically */
+        transition: transform 0.3s ease; /* Smooth hover movement */
+    }
+
+    .sidebar a i {
+        margin-right: 10px; /* Space between icon and text */
+        font-size: 26px; /* Icon size */
+    }
+
+    .sidebar a:hover {
+        transform: translateX(5px);
+        color: gray;
+    }
+</style>
+
+<!-- Add Bootstrap Icons CDN -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">

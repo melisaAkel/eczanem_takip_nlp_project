@@ -1,0 +1,67 @@
+<nav class="navbar navbar-expand-lg navbar-light bg-royal-blue rounded-navbar">
+    <a class="navbar-brand" href="{{ url_for('route.dashboard') }}">
+        <img src="/static/images/logo.png" alt="Pharmacy Logo" class="logo">
+        <div class="txt">Medicine Management</div>
+    </a>
+
+    <div class="ml-auto">
+        <a href="{{ url_for('user.logout') }}" class="btn btn-outline-danger btn-logout">
+            <i class="bi bi-box-arrow-right"></i> Logout
+        </a>
+    </div>
+</nav>
+
+<style>
+    /* Navbar background */
+.bg-royal-blue {
+    background-color: white; /* Adjusted color for the navbar */
+}
+
+/* Rounded navbar with shadow */
+.rounded-navbar {
+    border-radius: 30px; /* Rounded corners */
+    width: calc(100% - 20px);
+    margin: 20px auto;
+    padding: 10px 20px; /* Add some padding for better appearance */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Add shadow */
+}
+
+/* Navbar brand logo */
+.navbar-brand img {
+    width: 50px;
+    margin-right: 10px;
+}
+
+/* Navbar text */
+.txt {
+    color: gray; /* Light grey text */
+    font-weight: bold;
+}
+
+/* Navbar brand text and logo */
+.navbar-brand, .navbar-brand .logo {
+    color: #FFFFFF; /* White */
+}
+
+/* Logout button */
+.btn-logout {
+    color: gray; /* White */
+    border-color: gray; /* White outline */
+}
+
+/* Logout button hover */
+.btn-logout:hover {
+    transform: translateX(5px);
+}
+
+/* Navbar links (if any other links are added) */
+.navbar-nav .nav-link {
+    color: gray; /* White */
+}
+
+/* Navbar links hover state */
+.navbar-nav .nav-link:hover {
+    color: lightgrey; /* Sky Blue */
+}
+
+</style>

@@ -44,9 +44,7 @@ CREATE TABLE report (
 
 CREATE TABLE active_ingredient (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(80) NOT NULL,
-    amount VARCHAR(80) NOT NULL,
-    UNIQUE (name, amount)
+    name VARCHAR(200) NOT NULL
 );
 
 CREATE TABLE medicine_active_ingredient (
@@ -130,3 +128,4 @@ END //
 DELIMITER ;
 ALTER DATABASE eczanemtakipdb CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 ALTER TABLE medicine CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+ALTER TABLE active_ingredient CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;

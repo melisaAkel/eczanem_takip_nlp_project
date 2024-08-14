@@ -1,0 +1,328 @@
+{% extends 'layout.html' %}
+
+{% block title %}Sales Analysis{% endblock %}
+
+{% block styles %}
+<style>
+    body {
+        background-color: #f8f9fa;
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+    }
+
+    .wrapper {
+        display: flex;
+        width: 100%;
+    }
+
+    .content {
+        margin-left: 250px; /* Width of the sidebar */
+        padding: 20px;
+        width: calc(100% - 250px);
+    }
+
+    .navbar-brand img {
+        width: 50px;
+        margin-right: 20px;
+    }
+
+    .card {
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        margin-bottom: 30px;
+    }
+
+    .card-header {
+        background-color: #343a40;
+        color: #fff;
+    }
+
+    h1, h3 {
+        color: #343a40;
+    }
+
+    .table-responsive {
+        margin-top: 20px;
+    }
+
+    #analysisTable thead {
+        background-color: #343a40;
+        color: #fff;
+    }
+
+    #analysisTable tbody tr:nth-child(even) {
+        background-color: #f2f2f2;
+    }
+
+    .btn-primary {
+        background-color: #343a40;
+        border-color: #343a40;
+    }
+
+    .btn-primary:hover {
+        background-color: #23272b;
+        border-color: #23272b;
+    }
+
+    .pagination-container {
+        display: flex;
+        justify-content: center;
+        margin-top: 20px;
+    }
+
+    .page-link {
+        color: #343a40;
+    }
+
+    .page-link:hover {
+        color: #23272b;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="card">
+        <div class="card-header">
+            Sales Analysis Overview
+        </div>
+        <div class="card-body">
+            <!-- Date Range Selection -->
+            <div class="form-group">
+                <label for="start-date">Start Date:</label>
+                <input type="date" id="start-date" class="form-control">
+            </div>
+            <div class="form-group">
+                <label for="end-date">End Date:</label>
+                <input type="date" id="end-date" class="form-control">
+            </div>
+            <button id="analyze-button" class="btn btn-primary">Analyze Sales</button>
+
+            <!-- Total Sales Section -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    Total Sales
+                </div>
+                <div class="card-body">
+                    <canvas id="totalSalesChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Most Popular Medicines Section -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    Most Popular Medicines
+                </div>
+                <div class="card-body">
+                    <canvas id="popularMedicinesChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Sales by Medicine Section -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    Sales by Medicine
+                </div>
+                <div class="card-body">
+                    <canvas id="salesByMedicineChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Pagination Controls (if needed) -->
+            <div class="pagination-container">
+                <ul class="pagination">
+                    <li class="page-item"><a class="page-link" href="#" id="prevPage">Previous</a></li>
+                    <li class="page-item"><a class="page-link" href="#" id="nextPage">Next</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
+<script>
+    $(document).ready(function() {
+        let userId = null;
+
+        // Fetch the user ID from the API
+        fetchUserId().then(id => {
+            userId = id;
+        }).catch(error => {
+            console.error("Error fetching user ID:", error);
+            alert("Error fetching user ID. Please check your API endpoint and try again.");
+        });
+
+        $('#analyze-button').click(function() {
+            const startDate = $('#start-date').val();
+            const endDate = $('#end-date').val();
+
+            if (!startDate || !endDate) {
+                alert('Please select both start and end dates.');
+                return;
+            }
+
+            if (!userId) {
+                alert('User ID is not available. Please try again later.');
+                return;
+            }
+
+            // Fetch total sales by medicine
+            fetchTotalSalesByMedicine(userId, startDate, endDate);
+
+            // Fetch most popular medicines
+            fetchMostPopularMedicines(userId, startDate, endDate);
+
+            // Fetch sales by medicine
+            fetchSalesByMedicine(userId, startDate, endDate);
+        });
+
+        function fetchUserId() {
+            const apiUrl = "http://localhost:5000/api/users/get_user_id";  // This is your endpoint
+
+            return fetch(apiUrl)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        return data.user_id;
+                    } else {
+                        throw new Error(data.message || "Failed to fetch user ID.");
+                    }
+                });
+        }
+
+        function fetchTotalSalesByMedicine(userId, startDate, endDate) {
+            const apiUrl = "http://localhost:5000/api/analysis/total_sales_by_medicine";
+            const requestData = {
+                "user_id": userId,
+                "start_date": startDate,
+                "end_date": endDate
+            };
+
+            fetch(apiUrl, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(requestData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Render Total Sales Chart
+                    const totalSalesData = data.sales_summary.map(item => item.total_quantity);
+                    const totalSalesLabels = data.sales_summary.map(item => item.medicine_name);
+
+                    renderChart('totalSalesChart', 'Total Sales by Medicine', totalSalesLabels, totalSalesData);
+                } else {
+                    alert("Failed to load total sales: " + data.message);
+                }
+            })
+            .catch(error => {
+                console.error("Error fetching total sales:", error);
+                alert("Error fetching total sales. Please check your API endpoint and try again.");
+            });
+        }
+
+        function fetchMostPopularMedicines(userId, startDate, endDate) {
+            const apiUrl = "http://localhost:5000/api/analysis/most_popular_medicines";
+            const requestData = {
+                "user_id": userId,
+                "start_date": startDate,
+                "end_date": endDate
+            };
+
+            fetch(apiUrl, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(requestData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Render Most Popular Medicines Chart
+                    const popularMedicinesData = Object.values(data.most_popular_medicines);
+                    const popularMedicinesLabels = Object.keys(data.most_popular_medicines);
+
+                    renderChart('popularMedicinesChart', 'Most Popular Medicines', popularMedicinesLabels, popularMedicinesData);
+                } else {
+                    alert("Failed to load most popular medicines: " + data.message);
+                }
+            })
+            .catch(error => {
+                console.error("Error fetching most popular medicines:", error);
+                alert("Error fetching most popular medicines. Please check your API endpoint and try again.");
+            });
+        }
+
+        function fetchSalesByMedicine(userId, startDate, endDate) {
+            const apiUrl = "http://localhost:5000/api/analysis/filtered_sales";
+            const requestData = {
+                "user_id": userId,
+                "start_date": startDate,
+                "end_date": endDate
+            };
+
+            fetch(apiUrl, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(requestData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Render Sales by Medicine Chart
+                    const salesByMedicineData = data.sales_summary.map(item => item.total_quantity);
+                    const salesByMedicineLabels = data.sales_summary.map(item => item.medicine_name);
+
+                    renderChart('salesByMedicineChart', 'Sales by Medicine', salesByMedicineLabels, salesByMedicineData);
+                } else {
+                    alert("Failed to load sales by medicine: " + data.message);
+                }
+            })
+            .catch(error => {
+                console.error("Error fetching sales by medicine:", error);
+                                alert("Error fetching sales by medicine. Please check your API endpoint and try again.");
+            });
+        }
+
+        function renderChart(canvasId, chartTitle, labels, data) {
+            const ctx = document.getElementById(canvasId).getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',  // You can change the chart type here (e.g., 'line', 'pie')
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: chartTitle,
+                        data: data,
+                        backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    },
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: chartTitle
+                        }
+                    }
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

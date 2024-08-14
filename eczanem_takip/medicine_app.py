@@ -11,9 +11,24 @@ logging.basicConfig(filename='/tmp/medicine_processing.log', level=logging.DEBUG
 medicine_bp = Blueprint('medicine', __name__)
 
 
-@medicine_bp.route('/register_medicine_page', methods=['GET'])
-def register_medicine_page():
-    return render_template('register_medicine.html')
+
+
+@medicine_bp.route('/medicine_details/<int:medicine_id>', methods=['GET'])
+def medicine_details(medicine_id):
+    try:
+        # Fetch the medicine by ID
+        medicine = Medicine.get_by_id(mysql.connection, medicine_id)
+        if not medicine:
+            return render_template('404.html', message="Medicine not found"), 404
+
+        # Fetch the active ingredients associated with this medicine
+        active_ingredients = Medicine.get_active_ingredients_for_medicine(mysql.connection, medicine_id)
+
+        # Pass the medicine and active ingredients to the template
+        return render_template('medicine_details.html', medicine=medicine, active_ingredients=active_ingredients)
+    except Exception as e:
+        logging.error(f"Error fetching medicine details: {str(e)}")
+        return render_template('500.html', message="An error occurred while fetching medicine details"), 500
 
 
 # Get All Medicines (Read)
@@ -133,10 +148,9 @@ def update_medicine(medicine_id):
         Medicine.remove_all_active_ingredients(mysql.connection, medicine_id)
         for ingredient in active_ingredients:
             ingredient_name = ingredient.get('name')
-            ingredient_amount = ingredient.get('amount')
-            if ingredient_name and ingredient_amount:
-                active_ingredient_id = Medicine.add_active_ingredient(mysql.connection, ingredient_name,
-                                                                      ingredient_amount)
+            if ingredient_name:
+                active_ingredient_id = Medicine.add_active_ingredient(mysql.connection, ingredient_name
+                                                                     )
                 Medicine.add_medicine_active_ingredient(mysql.connection, medicine_id, active_ingredient_id)
 
         return jsonify(
@@ -146,7 +160,7 @@ def update_medicine(medicine_id):
         return jsonify({"success": False, "message": "Failed to update medicine", "error": str(e)}), 500
 
 
-# Delete Medicine (Delete)
+
 @medicine_bp.route('/delete_medicine/<int:medicine_id>', methods=['DELETE'], endpoint='delete_medicine')
 def delete_medicine(medicine_id):
     try:
@@ -173,7 +187,6 @@ def register_medicine():
     form = data.get('form')
     barcode = data.get('barcode')
     equivalent_medicine_group = data.get('equivalent_medicine_group')
-    active_ingredients = data.get('active_ingredients', [])  # List of active ingredients
 
     if not all([public_number, atc_code, name, brand, barcode]):
         return jsonify(
@@ -186,17 +199,7 @@ def register_medicine():
         medicine_id = Medicine.add(mysql.connection, new_medicine)
         new_medicine.id = medicine_id
 
-        for ingredient in active_ingredients:
-            ingredient_name = ingredient.get('name')
-            ingredient_amount = ingredient.get('amount')
-            if ingredient_name and ingredient_amount:
-                existing_ingredient = Medicine.get_active_ingredient_by_name(mysql.connection, ingredient_name)
-                if existing_ingredient:
-                    active_ingredient_id = existing_ingredient.id
-                else:
-                    active_ingredient_id = Medicine.add_active_ingredient(mysql.connection, ingredient_name,
-                                                                          ingredient_amount)
-                Medicine.add_medicine_active_ingredient(mysql.connection, medicine_id, active_ingredient_id)
+
 
         return jsonify({"success": True, "message": "Medicine successfully added to the system.",
                         "medicine": new_medicine.serialize()}), 201
@@ -207,61 +210,74 @@ VALID_REPORT_TYPES = {'KIRMIZI', 'MOR', 'TURUNCU', 'YEŞİL', 'NORMAL'}
 
 @medicine_bp.route('/register_medicine_from_excel', methods=['POST'], endpoint='register_medicine_from_excel')
 def register_medicine_from_excel():
-    # Load the Excel file
-    file = request.files['file']
-    excel_data = pd.read_excel(file)
+    try:
+        # Load the Excel file
+        file = request.files['file']
+        excel_data = pd.read_excel(file)
 
-    # Replace NaN values with defaults
-    excel_data.fillna({
-        'Barkod': '',
-        'ATC Kodu': '',
-        'Reçete Türü': 'NORMAL',
-        'İlaç Adı': '',
-        'Firma Adı': '',
-        'Form': '',
-        'Equivalent Medicine Group': '',
-        'Active Ingredients': []
-    }, inplace=True)
+        # Replace NaN values with defaults
+        excel_data.fillna({
+            'Barkod': '',
+            'ATC Kodu': '',
+            'Reçete Türü': 'NORMAL',
+            'İlaç Adı': '',
+            'Firma Adı': '',
+            'Form': '',
+            'Equivalent Medicine Group': '',
+            'ATC Adı': ''  # Assuming 'ATC Adı' contains the active ingredients information
+        }, inplace=True)
 
-    for index, row in excel_data.iterrows():
-        public_number = row['Barkod']
-        atc_code = row['ATC Kodu']
-        report_type = row['Reçete Türü'].upper()  # Ensure the value is uppercase
-        report_type = report_type if report_type in VALID_REPORT_TYPES else 'NORMAL'
-        name = row['İlaç Adı'][:200]  # Truncate to match the database column length
-        brand = row['Firma Adı'][:200]  # Truncate to match the database column length
-        form = row.get('Form', '')[:200]  # Assuming 'Form' column exists in the Excel and truncating
-        barcode = row['Barkod']
-        equivalent_medicine_group = row.get('Equivalent Medicine Group', '')[:80]  # Assuming column name and truncating
-        active_ingredients = row.get('Active Ingredients', [])  # Assuming column name
+        for index, row in excel_data.iterrows():
+            try:
+                public_number = row['Barkod']
+                atc_code = row['ATC Kodu']
+                report_type = row['Reçete Türü'].upper()  # Ensure the value is uppercase
+                report_type = report_type if report_type in VALID_REPORT_TYPES else 'NORMAL'
+                name = row['İlaç Adı'][:200]  # Truncate to match the database column length
+                brand = row['Firma Adı'][:200]  # Truncate to match the database column length
+                form = row.get('Form', '')[:200]  # Assuming 'Form' column exists in the Excel and truncating
+                barcode = row['Barkod']
+                equivalent_medicine_group = row.get('Equivalent Medicine Group', '')[:80]  # Assuming column name and truncating
+                active_ingredients_str = row.get('ATC Adı', '')  # Assuming 'ATC Adı' contains active ingredients info
 
-        if not all([public_number, atc_code, name, brand, barcode]):
-            continue  # Skip rows with missing required fields
+                if not all([public_number, atc_code, name, brand, barcode]):
+                    continue  # Skip rows with missing required fields
 
-        new_medicine = Medicine(None, public_number, atc_code, report_type, name, brand, form, barcode,
-                                equivalent_medicine_group)
+                new_medicine = Medicine(None, public_number, atc_code, report_type, name, brand, form, barcode,
+                                        equivalent_medicine_group)
 
-        try:
-            medicine_id = Medicine.add(mysql.connection, new_medicine)
-            new_medicine.id = medicine_id
+                # Add the medicine to the database
+                medicine_id = Medicine.add(mysql.connection, new_medicine)
+                new_medicine.id = medicine_id
 
-            for ingredient in active_ingredients:
-                ingredient_name = ingredient.get('name')
-                ingredient_amount = ingredient.get('amount')
-                if ingredient_name and ingredient_amount:
-                    existing_ingredient = Medicine.get_active_ingredient_by_name(mysql.connection, ingredient_name)
-                    if existing_ingredient:
-                        active_ingredient_id = existing_ingredient.id
-                    else:
-                        active_ingredient_id = Medicine.add_active_ingredient(mysql.connection, ingredient_name,
-                                                                              ingredient_amount)
-                    Medicine.add_medicine_active_ingredient(mysql.connection, medicine_id, active_ingredient_id)
+                # Process active ingredients
+                if active_ingredients_str:
+                    # Split the string by comma or any other delimiter you expect
+                    active_ingredients = active_ingredients_str.split(',')
+                    for ingredient_name in active_ingredients:
+                        ingredient_name = ingredient_name.strip()
+                        if not ingredient_name:
+                            continue
 
-        except Exception as e:
-            mysql.connection.rollback()
-            return jsonify({"success": False, "message": "Failed to add some medicines", "error": str(e)}), 500
+                        existing_ingredient = Medicine.get_active_ingredient_by_name(mysql.connection, ingredient_name)
+                        if existing_ingredient:
+                            active_ingredient_id = existing_ingredient.id
+                        else:
+                            active_ingredient_id = Medicine.add_active_ingredient(mysql.connection, ingredient_name)
 
-    return jsonify({"success": True, "message": "All medicines successfully added to the system."}), 201
+                        # Associate the active ingredient with the medicine
+                        Medicine.add_medicine_active_ingredient(mysql.connection, medicine_id, active_ingredient_id)
+
+            except Exception as e:
+                logging.error(f"Error processing row {index}: {str(e)}")
+                return jsonify({"success": False, "message": "Failed to process a row", "error": str(e), "row": index}), 500
+
+        return jsonify({"success": True, "message": "All medicines successfully added to the system."}), 201
+
+    except Exception as e:
+        logging.error(f"Error processing Excel file: {str(e)}")
+        return jsonify({"success": False, "message": "Failed to process the Excel file", "error": str(e)}), 500
+
 # Get Active Ingredient by Name (Read)
 @medicine_bp.route('/get_active_ingredient_by_name/<string:name>', methods=['GET'])
 def get_active_ingredient_by_name(name):
@@ -318,13 +334,12 @@ def get_active_for_medicine(medicine_id):
 def add_active_ingredient():
     data = request.get_json()
     name = data.get('name')
-    amount = data.get('amount')
 
-    if not all([name, amount]):
-        return jsonify({"success": False, "message": "Name and amount are required"}), 400
+    if not all([name]):
+        return jsonify({"success": False, "message": "Name is required"}), 400
 
     try:
-        ingredient_id = Medicine.add_active_ingredient(mysql.connection, name, amount)
+        ingredient_id = Medicine.add_active_ingredient(mysql.connection, name)
         new_ingredient = Medicine.get_active_ingredient_by_id(mysql.connection, ingredient_id)
         return jsonify({"success": True, "message": "Active ingredient successfully added",
                         "active_ingredient": new_ingredient.serialize()}), 201
@@ -339,7 +354,6 @@ def add_active_ingredient():
 def update_active_ingredient(ingredient_id):
     data = request.get_json()
     name = data.get('name')
-    amount = data.get('amount')
 
     try:
         ingredient = Medicine.get_active_ingredient_by_id(mysql.connection, ingredient_id)
@@ -347,7 +361,6 @@ def update_active_ingredient(ingredient_id):
             return jsonify({"success": False, "message": "Active ingredient not found"}), 404
 
         ingredient.name = name
-        ingredient.amount = amount
 
         Medicine.update_active_ingredient(mysql.connection, ingredient)
         return jsonify({"success": True, "message": "Active ingredient successfully updated",

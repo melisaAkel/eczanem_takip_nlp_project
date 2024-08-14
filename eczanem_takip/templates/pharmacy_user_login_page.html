@@ -6,17 +6,21 @@
     <title>Pharmacy Inventory Login</title>
     <style>
         body {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            font-family: 'Helvetica Neue', Arial, sans-serif;
-            background: #f3f4f6;
-        }
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    background: white;
+    background-image: radial-gradient(circle, #d16ba5, #c777b9, #ba83ca, #aa8fd8, #9a9ae1, #8aa7ec, #79b3f4, #69bff8, #52cffe, #41dfff, #46eefa, #5ffbf1);
+    background-size: cover; /* Ensure the gradient covers the entire background */
+}
+
+
         .login-container {
             background: #ffffff;
-            padding: 40px;
+            padding: 50px;
             border-radius: 15px;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
             max-width: 400px;
@@ -24,7 +28,7 @@
             text-align: center;
         }
         .login-container h1 {
-            color: #333;
+            color: #F7F9FA;
             margin-bottom: 20px;
             font-size: 24px;
             font-weight: 700;
@@ -39,8 +43,8 @@
             font-size: 16px;
         }
         .login-container button {
-            background: #1e3a8a;
-            color: #fff;
+            background: #A8D5E2;
+            color: #FFFFFF ;
             border: none;
             padding: 15px;
             border-radius: 8px;
@@ -51,7 +55,7 @@
             margin-top: 20px;
         }
         .login-container button:hover {
-            background: #1e40af;
+            background: #8AB4C7;
         }
         .logo {
             width: 80px;
@@ -65,12 +69,12 @@
         .link {
             margin-top: 15px;
             font-size: 14px;
-            color: #1e3a8a;
+            color: #F2D9C2;
             text-decoration: underline;
             cursor: pointer;
         }
         .link:hover {
-            color: #1e40af;
+            color: #a05aff;
         }
     </style>
 </head>
@@ -108,8 +112,7 @@
             const result = await response.json();
 
             if (result.success) {
-                alert('Login successful');
-                // Redirect or perform actions upon successful login
+                window.location.href = '/';
             } else {
                 alert('Login failed: ' + result.message);
             }

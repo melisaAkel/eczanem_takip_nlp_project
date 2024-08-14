@@ -1,13 +1,25 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Medicine Management</title>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+{% extends 'layout.html' %}
+
+{% block title %}Medicine Management{% endblock %}
+{% block styles %}
     <style>
         body {
             background-color: #f8f9fa;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        .wrapper {
+            display: flex;
+            width: 100%;
+        }
+
+        .content {
+            margin-left: 250px; /* Width of the sidebar */
+            padding: 20px;
+            width: calc(100% - 250px); /* Adjust content width to avoid overlap */
+            margin-top: 60px; /* Offset for fixed navbar */
         }
 
         .navbar-brand img {
@@ -22,15 +34,19 @@
         #medicinesList .list-group-item {
             margin-bottom: 10px;
         }
+
+        /* Optional: Modal for better UI when scanning barcode */
+        #videoModal .modal-dialog {
+            max-width: 400px;
+        }
+
+        #video {
+            width: 100%;
+            border: 1px solid gray;
+        }
     </style>
-</head>
-<body>
-    <nav class="navbar navbar-expand-lg navbar-light bg-light">
-        <a class="navbar-brand" href="#">
-            <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Pharmacy Logo" class="logo">
-            Medicine Management
-        </a>
-    </nav>
+{% endblock %}
+{% block content %}
     <div class="container mt-5">
         <h1 class="text-center mb-4">Medicine Management</h1>
 
@@ -76,7 +92,7 @@
                     </div>
                     <div class="form-group">
                         <label for="activeIngredients">Active Ingredients (JSON format)</label>
-                        <textarea class="form-control" id="activeIngredients" placeholder='[{"name": "Ingredient1", "amount": "10mg"}]'></textarea>
+                        <textarea class="form-control" id="activeIngredients" placeholder='[{"name": "Ingredient1"}]'></textarea>
                     </div>
                     <button type="submit" class="btn btn-primary">Register Medicine</button>
                 </form>
@@ -112,22 +128,45 @@
             </div>
         </div>
     </div>
-
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
+{% endblock %}
+{% block scripts %}
     <script src="https://unpkg.com/@zxing/library@latest"></script> <!-- ZXing library for barcode scanning -->
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
+       document.addEventListener('DOMContentLoaded', function() {
             let currentPage = 1;
             const perPage = 10;
             let searchQuery = '';
             let isCameraOpen = false; // To track the camera state
             let codeReader = new ZXing.BrowserBarcodeReader();
+            let userId = null;
+
+            // Fetch the user ID from the API
+            fetchUserId().then(id => {
+                userId = id;
+                fetchMedicines(currentPage);  // Initial fetch after getting the user ID
+            }).catch(error => {
+                console.error("Error fetching user ID:", error);
+                alert("Error fetching user ID. Please check your API endpoint and try again.");
+            });
+
+            function fetchUserId() {
+                const apiUrl = "http://localhost:5000/api/users/get_user_id";  // Replace with your actual endpoint
+
+                return fetch(apiUrl)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            return data.user_id;
+                        } else {
+                            throw new Error(data.message || "Failed to fetch user ID.");
+                        }
+                    });
+            }
 
             function fetchMedicines(page, query = '') {
                 const url = query
-                    ? `http://localhost:5000/api/medicines/search_medicines?name=${query}&page=${page}&per_page=${perPage}`
-                    : `http://localhost:5000/api/medicines/get_all_medicines?page=${page}&per_page=${perPage}`;
+                    ? `http://localhost:5000/api/medicines/search_medicines?user_id=${userId}&name=${query}&page=${page}&per_page=${perPage}`
+                    : `http://localhost:5000/api/medicines/get_all_medicines?user_id=${userId}&page=${page}&per_page=${perPage}`;
                 fetch(url)
                     .then(response => response.json())
                     .then(response => {
@@ -163,6 +202,7 @@
                 event.preventDefault();
 
                 const data = {
+                    user_id: userId,  // Include user ID in the request data
                     public_number: document.getElementById('publicNumber').value,
                     atc_code: document.getElementById('atcCode').value,
                     name: document.getElementById('name').value,
@@ -204,6 +244,7 @@
             document.getElementById('nextPage').addEventListener('click', function() {
                 fetchMedicines(currentPage + 1, searchQuery);
             });
+
             document.getElementById('searchForm').addEventListener('submit', function(event) {
                 event.preventDefault();
                 searchQuery = document.getElementById('searchQuery').value;
@@ -218,7 +259,7 @@
             });
 
             function fetchMedicinesByBarcode(barcode) {
-                const url = `http://localhost:5000/api/medicines/search_by_barcode?barcode=${barcode}`;
+                const url = `http://localhost:5000/api/medicines/search_by_barcode?user_id=${userId}&barcode=${barcode}`;
                 fetch(url)
                     .then(response => response.json())
                     .then(response => {
@@ -244,43 +285,48 @@
             document.getElementById('scanBarcode').addEventListener('click', function() {
                 if (isCameraOpen) {
                     codeReader.reset();
-                    videoContainer.style.display = 'none';
-                    document.getElementById('scanBarcode').classList.remove('btn-primary');
-                    document.getElementById('scanBarcode').classList.add('btn-outline-primary');
+                    $('#videoModal').modal('hide');
                     isCameraOpen = false;
                 } else {
-                    videoContainer.style.display = 'block';
+                    $('#videoModal').modal('show');
                     codeReader.decodeOnceFromVideoDevice(undefined, 'video')
                         .then(result => {
                             document.getElementById('barcodeSearchQuery').value = result.text;
                             fetchMedicinesByBarcode(result.text);
                             codeReader.reset();
-                            videoContainer.style.display = 'none';
-                            document.getElementById('scanBarcode').classList.remove('btn-primary');
-                            document.getElementById('scanBarcode').classList.add('btn-outline-primary');
+                            $('#videoModal').modal('hide');
                             isCameraOpen = false;
                         })
                         .catch(err => {
                             console.error(err);
-                            videoContainer.style.display = 'none';
-                            document.getElementById('scanBarcode').classList.remove('btn-primary');
-                            document.getElementById('scanBarcode').classList.add('btn-outline-primary');
+                            $('#videoModal').modal('hide');
                             isCameraOpen = false;
                         });
-                    document.getElementById('scanBarcode').classList.remove('btn-outline-primary');
-                    document.getElementById('scanBarcode').classList.add('btn-primary');
                     isCameraOpen = true;
                 }
             });
 
-            // Create a video element for barcode scanning
-            const videoContainer = document.createElement('div');
-            videoContainer.style.position = 'relative';
-            videoContainer.innerHTML = '<video id="video" width="300" height="200" style="border: 1px solid gray"></video>';
-            document.body.appendChild(videoContainer);
-            videoContainer.style.display = 'none'; // Hide the video element by default
+            // Add video element for barcode scanning
+            const videoModalHTML = `
+                <div class="modal fade" id="videoModal" tabindex="-1" role="dialog" aria-labelledby="videoModalLabel" aria-hidden="true">
+                    <div class="modal-dialog" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="videoModalLabel">Scan Barcode</h5>
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                            <div class="modal-body">
+                                <video id="video"></video>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            document.body.insertAdjacentHTML('beforeend', videoModalHTML);
         });
     </script>
-</body>
-</html>
-
+{% endblock %}

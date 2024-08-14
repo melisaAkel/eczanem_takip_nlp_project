@@ -1,16 +1,14 @@
 import MySQLdb
 
 class ActiveIngredient:
-    def __init__(self, id, name, amount):
+    def __init__(self, id, name):
         self.id = id
         self.name = name
-        self.amount = amount
 
     def serialize(self):
         return {
             'id': self.id,
-            'name': self.name,
-            'amount': self.amount
+            'name': self.name
         }
 
 class Medicine:
@@ -178,9 +176,9 @@ class Medicine:
         return None
 
     @staticmethod
-    def add_active_ingredient(connection, name, amount):
+    def add_active_ingredient(connection, name):
         cursor = connection.cursor()
-        cursor.execute("INSERT INTO active_ingredient (name, amount) VALUES (%s, %s)", (name, amount))
+        cursor.execute("INSERT INTO active_ingredient (name) VALUES (%s)", (name,))
         connection.commit()
         return cursor.lastrowid
 
@@ -196,21 +194,21 @@ class Medicine:
     def get_active_ingredients_for_medicine(connection, medicine_id):
         cursor = connection.cursor()
         cursor.execute("""
-            SELECT ai.id, ai.name, ai.amount 
+            SELECT ai.id, ai.name
             FROM active_ingredient ai
             JOIN medicine_active_ingredient mai ON ai.id = mai.active_ingredient_id
             WHERE mai.medicine_id = %s
         """, (medicine_id,))
         rows = cursor.fetchall()
         cursor.close()
-        return [ActiveIngredient(id=row[0], name=row[1], amount=row[2]) for row in rows]
+        return [ActiveIngredient(id=row[0], name=row[1]) for row in rows]
 
     @staticmethod
     def update_active_ingredient(connection, ingredient):
         cursor = connection.cursor()
         cursor.execute("""
-            UPDATE active_ingredient SET name = %s, amount = %s WHERE id = %s
-        """, (ingredient.name, ingredient.amount, ingredient.id))
+            UPDATE active_ingredient SET name = %s WHERE id = %s
+        """, (ingredient.name, ingredient.id))
         connection.commit()
         cursor.close()
 
@@ -237,7 +235,7 @@ class Medicine:
         cursor.execute("SELECT * FROM active_ingredient")
         rows = cursor.fetchall()
         cursor.close()
-        return [ActiveIngredient(id=row['id'], name=row['name'], amount=row['amount']) for row in rows]
+        return [ActiveIngredient(id=row['id'], name=row['name']) for row in rows]
 
     @classmethod
     def remove_all_active_ingredients(cls, connection, medicine_id):
