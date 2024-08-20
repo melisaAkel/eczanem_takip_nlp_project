@@ -6,78 +6,87 @@
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <style>
         body {
-            background-color: #f8f9fa;
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-        }
-
-        .wrapper {
-            display: flex;
-            width: 100%;
-        }
-
-        .content {
-            margin-left: 250px; /* Width of the sidebar */
-            padding: 20px;
-            width: calc(100% - 250px);
+            background-color: #ffffff; /* Keep the overall background white */
         }
 
         .card {
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            margin-bottom: 30px;
+            border-radius: 30px; /* Round the corners */
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); /* Slight shadow */
+            background-color: #ffffff; /* Ensure card background is white */
+            border-color: transparent;
         }
 
         .card-header {
-            background-color: #343a40;
-            color: #fff;
+            background-color: white; /* Consistent header color */
+            color: gray; /* Gray text for contrast */
+            font-size: 22px;
+            border-radius: 10px 10px 0 0; /* Round top corners */
         }
 
-        .filter-section {
+        h1 {
+            color: #343a40; /* Dark gray for big headers */
+            font-weight: bold;
             margin-bottom: 20px;
         }
 
-        .filter-section input,
-        .filter-section select {
-            margin-bottom: 10px;
+        h5 {
+            color: #6c757d; /* Light gray for smaller headers */
+            font-weight: 500;
         }
 
         #saleTable thead {
-            background-color: #343a40;
-            color: #fff;
+            background-color: #4A8BDF; /* Use primary color for table header */
+            color: #ffffff; /* White text for better readability */
+            border-radius: 5px;
         }
 
         #saleTable tbody tr:nth-child(even) {
-            background-color: #f2f2f2;
+            background-color: #f2f2f2; /* Light gray background for even rows */
         }
 
-        .btn-primary {
-            background-color: #343a40;
-            border-color: #343a40;
+        #saleTable tbody tr {
+            border: 1px solid #dee2e6; /* Light gray border */
         }
 
-        .btn-primary:hover {
-            background-color: #23272b;
-            border-color: #23272b;
+        .btn-primary, .btn-secondary, .btn-success, .btn-outline-primary {
+            background-color: #4A8BDF; /* Use primary color */
+            color: #ffffff;
+            border-radius: 15px; /* Round the corners */
+            border-color: transparent;
         }
 
-        .pagination-container {
-            display: flex;
-            justify-content: center;
-            margin-top: 20px;
+        .btn-primary:hover, .btn-secondary:hover, .btn-success:hover, .btn-outline-primary:hover {
+            background-color: #3972B2; /* Darker shade on hover */
+            border-color: #3972B2;
         }
 
-        .page-link {
-            color: #343a40;
+        /* Adjust content to account for sidebar */
+        .content {
+            margin-left: 260px; /* Sidebar width + some padding */
+            padding: 20px;
         }
 
-        .page-link:hover {
-            color: #23272b;
+        /* Modal table styling */
+        .modal-table {
+            width: 100%;
+            margin-bottom: 20px;
+            border: 1px solid #dee2e6; /* Light gray border */
         }
 
         .modal-table th, .modal-table td {
             padding: 10px;
             text-align: left;
+        }
+
+        .modal-table th {
+            background-color: #4A8BDF; /* Use primary color for header */
+            color: #ffffff;
+        }
+
+        .separator-line {
+            height: 1px;
+            background-color: #dee2e6; /* Light gray line for separation */
+            margin: 20px 0;
         }
     </style>
 {% endblock %}
@@ -86,10 +95,10 @@
 <div class="container mt-5">
     <div class="card">
         <div class="card-header">
-            Filter Medicines
+            <h2 class="text-center">Filter Medicines</h2>
         </div>
         <div class="card-body">
-            <div class="filter-section">
+            <form id="filterForm" class="mb-4">
                 <div class="row">
                     <div class="col-md-4">
                         <input type="text" id="supplierName" class="form-control" placeholder="Supplier Name">
@@ -109,9 +118,10 @@
                         <button id="filterMedicines" class="btn btn-primary btn-block">Filter Medicines</button>
                     </div>
                 </div>
-            </div>
+            </form>
+
             <div class="table-responsive">
-                <table class="table table-bordered" id="saleTable">
+                <table class="table" id="saleTable">
                     <thead>
                         <tr>
                             <th>Select</th>
@@ -128,13 +138,16 @@
                     </tbody>
                 </table>
             </div>
-            <div class="pagination-container">
-                <ul class="pagination">
-                    <li class="page-item"><a class="page-link" href="#" id="prevPage">Previous</a></li>
-                    <li class="page-item"><a class="page-link" href="#" id="nextPage">Next</a></li>
+
+            <nav aria-label="Pagination" class="pagination-container">
+                <ul class="pagination justify-content-center">
+                    <li class="page-item"><button class="page-link" id="prevPage">Previous</button></li>
+                    <li class="page-item"><button class="page-link" id="nextPage">Next</button></li>
                 </ul>
-            </div>
-            <button id="proceedButton" class="btn btn-success btn-block mt-4">Proceed to Sale</button>
+            </nav>
+
+            <button id="proceedButton" class="btn btn-success btn-block mt-4" style="width: 150px;">Proceed to Sale</button>
+
         </div>
     </div>
 </div>

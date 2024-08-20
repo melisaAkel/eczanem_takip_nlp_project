@@ -5,16 +5,11 @@
 {% block styles %}
 <style>
     body {
-        background-color: #d7d7d8;
+        background-color: #ffffff;
         font-family: Arial, sans-serif;
         display: flex;
         min-height: 100vh;
         margin: 0;
-    }
-
-    .navbar-brand img {
-        width: 50px;
-        margin-right: 20px;
     }
 
     .wrapper {
@@ -23,19 +18,24 @@
     }
 
     .content {
-        margin-left: 250px; /* Aligns content next to the sidebar */
-        width: calc(100% - 250px); /* Ensures the content takes up the remaining space */
+        margin-left: 260px; /* Aligns content next to the sidebar */
+        width: calc(100% - 260px); /* Ensures the content takes up the remaining space */
         padding: 20px;
     }
 
     .card {
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        border-radius: 30px; /* Rounded corners */
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); /* Slight shadow */
+        background-color: #ffffff;
+        border-color: transparent;
         margin-bottom: 30px;
     }
 
     .card-header {
-        background-color: #343a40;
-        color: #fff;
+        background-color: white;
+        color: gray;
+        font-size: 22px;
+        border-radius: 10px 10px 0 0; /* Round top corners */
     }
 
     .filter-group {
@@ -47,14 +47,28 @@
         text-align: left;
     }
 
-    .btn-primary {
-        background-color: #343a40;
-        border-color: #343a40;
+    .sales-table thead {
+        background-color: #4A8BDF;
+        color: #ffffff;
+        border-radius: 5px;
     }
 
-    .btn-primary:hover {
-        background-color: #23272b;
-        border-color: #23272b;
+    .sales-table tbody tr:nth-child(even) {
+        background-color: #f2f2f2;
+    }
+
+    .btn-primary, .btn-secondary {
+        background-color: #4A8BDF;
+        color: #ffffff;
+        border-radius: 15px;
+        border-color: transparent;
+        width: 150px; /* Smaller button width */
+        margin: 0 auto;
+    }
+
+    .btn-primary:hover, .btn-secondary:hover {
+        background-color: #3972B2;
+        border-color: #3972B2;
     }
 
     .pagination-container {
@@ -64,11 +78,11 @@
     }
 
     .page-link {
-        color: #343a40;
+        color: #4A8BDF;
     }
 
     .page-link:hover {
-        color: #23272b;
+        color: #3972B2;
     }
 </style>
 {% endblock %}
@@ -77,41 +91,43 @@
 <div class="container mt-5">
     <h1 class="text-center mb-4">View Sales</h1>
     <div class="card">
-        <div class="card-header">
+        <div class="card-header text-center">
             Sales Records
         </div>
         <div class="card-body">
-            <div class="filter-group row">
-                <div class="col-md-3">
-                    <label for="medicineName">Medicine Name:</label>
-                    <input type="text" id="medicineName" class="form-control" placeholder="Enter medicine name">
+            <form id="filterForm">
+                <div class="filter-group row">
+                    <div class="col-md-3">
+                        <label for="medicineName">Medicine Name:</label>
+                        <input type="text" id="medicineName" class="form-control" placeholder="Enter medicine name">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="customerName">Customer Name:</label>
+                        <input type="text" id="customerName" class="form-control" placeholder="Enter customer name">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="startDate">Start Date:</label>
+                        <input type="date" id="startDate" class="form-control">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="endDate">End Date:</label>
+                        <input type="date" id="endDate" class="form-control">
+                    </div>
                 </div>
-                <div class="col-md-3">
-                    <label for="customerName">Customer Name:</label>
-                    <input type="text" id="customerName" class="form-control" placeholder="Enter customer name">
+                <div class="filter-group row mt-3">
+                    <div class="col-md-3">
+                        <label for="minQuantity">Min Quantity:</label>
+                        <input type="number" id="minQuantity" class="form-control" min="1" placeholder="Min quantity">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="maxQuantity">Max Quantity:</label>
+                        <input type="number" id="maxQuantity" class="form-control" min="1" placeholder="Max quantity">
+                    </div>
+                    <div class="col-md-3 align-self-end">
+                        <button class="btn btn-primary btn-block" id="searchSalesButton" style="width: 150px;">Search</button>
+                    </div>
                 </div>
-                <div class="col-md-3">
-                    <label for="startDate">Start Date:</label>
-                    <input type="date" id="startDate" class="form-control">
-                </div>
-                <div class="col-md-3">
-                    <label for="endDate">End Date:</label>
-                    <input type="date" id="endDate" class="form-control">
-                </div>
-            </div>
-            <div class="filter-group row">
-                <div class="col-md-3">
-                    <label for="minQuantity">Min Quantity:</label>
-                    <input type="number" id="minQuantity" class="form-control" min="1" placeholder="Min quantity">
-                </div>
-                <div class="col-md-3">
-                    <label for="maxQuantity">Max Quantity:</label>
-                    <input type="number" id="maxQuantity" class="form-control" min="1" placeholder="Max quantity">
-                </div>
-                <div class="col-md-3 align-self-end">
-                    <button class="btn btn-primary" id="searchSalesButton">Search</button>
-                </div>
-            </div>
+            </form>
             <div id="salesTableContainer" class="mt-4">
                 <table class="table sales-table">
                     <thead>
@@ -127,7 +143,7 @@
                     </tbody>
                 </table>
             </div>
-            <div class="pagination-container">
+            <nav aria-label="Pagination" class="pagination-container">
                 <ul class="pagination justify-content-center">
                     <li class="page-item">
                         <button class="page-link" id="prevPageButton">Previous</button>
@@ -136,7 +152,7 @@
                         <button class="page-link" id="nextPageButton">Next</button>
                     </li>
                 </ul>
-            </div>
+            </nav>
         </div>
     </div>
 </div>

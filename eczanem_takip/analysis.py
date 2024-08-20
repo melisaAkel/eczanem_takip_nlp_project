@@ -155,6 +155,109 @@ def total_sales_by_medicine():
         return jsonify({"success": False, "message": "Failed to calculate total sales", "error": str(e)}), 500
 
 
+@analysis_bp.route('/top_medicines', methods=['POST'])
+def top_medicines():
+    try:
+        # Get data from the request
+        x = request.json.get('x')  # Number of top medicines to return
+        months = request.json.get('months')  # Period in months (1, 6, or 12)
+
+        # Validate input
+        if not x or not months or not isinstance(x, int) or not isinstance(months, int):
+            return jsonify(
+                {"success": False, "message": "Invalid input. Please provide valid 'x' and 'months' values."}), 400
+
+        if months not in [1, 6, 12]:
+            return jsonify({"success": False, "message": "Invalid 'months' value. Only 1, 6, and 12 are allowed."}), 400
+
+        # Get the MySQL connection
+        connection = mysql.connection
+        cursor = connection.cursor(MySQLdb.cursors.DictCursor)
+
+        # Query to get the top X medicines based on their maximum sales within the given period
+        query = f"""
+            SELECT m.name AS medicine_name, m.id AS med_id, SUM(ms.quantity) AS total_sales
+            FROM medicine_sales ms
+            JOIN medicine m ON ms.medicine_id = m.id
+            WHERE ms.sale_date >= CURDATE() - INTERVAL %s MONTH
+            GROUP BY ms.medicine_id
+            ORDER BY total_sales DESC
+            LIMIT %s;
+        """
+
+        cursor.execute(query, (months, x))
+        top_medicines_data = cursor.fetchall()
+        cursor.close()
+
+        if not top_medicines_data:
+            return jsonify({"success": False, "message": "No data found for the given criteria."}), 404
+
+        # Convert data to a serializable format
+        top_medicines = [
+            {
+                "medicine_name": row["medicine_name"],
+                "id": int(row["med_id"]),
+                "total_sales": int(row["total_sales"])
+            }
+            for row in top_medicines_data
+        ]
+
+        return jsonify({"success": True, "top_medicines": top_medicines}), 200
+
+    except Exception as e:
+        return jsonify({"success": False, "message": "Failed to retrieve top medicines", "error": str(e)}), 500
+
+
+
+@analysis_bp.route('/sales_summary', methods=['GET'])
+def general_sales_summary():
+    try:
+        # Get the MySQL connection
+        connection = mysql.connection
+        cursor = connection.cursor(MySQLdb.cursors.DictCursor)
+
+        # Query for total sales in the last month
+        query_last_month_sales = """
+            SELECT SUM(quantity) AS total_sales_last_month
+            FROM medicine_sales
+            WHERE sale_date >= CURDATE() - INTERVAL 1 MONTH;
+        """
+        cursor.execute(query_last_month_sales)
+        last_month_sales = cursor.fetchone()['total_sales_last_month'] or 0
+
+        # Query for total sales in the last six months
+        query_last_six_months_sales = """
+            SELECT SUM(quantity) AS total_sales_last_six_months
+            FROM medicine_sales
+            WHERE sale_date >= CURDATE() - INTERVAL 6 MONTH;
+        """
+        cursor.execute(query_last_six_months_sales)
+        last_six_months_sales = cursor.fetchone()['total_sales_last_six_months'] or 0
+
+        # Query for total sales in the last year
+        query_last_year_sales = """
+            SELECT SUM(quantity) AS total_sales_last_year
+            FROM medicine_sales
+            WHERE sale_date >= CURDATE() - INTERVAL 1 YEAR;
+        """
+        cursor.execute(query_last_year_sales)
+        last_year_sales = cursor.fetchone()['total_sales_last_year'] or 0
+
+        cursor.close()
+
+        # Prepare the response
+        response = {
+            "success": True,
+            "total_sales_last_month": int(last_month_sales),
+            "total_sales_last_six_months": int(last_six_months_sales),
+            "total_sales_last_year": int(last_year_sales)
+        }
+
+        return jsonify(response), 200
+
+    except Exception as e:
+        return jsonify({"success": False, "message": "Failed to fetch general sales summary", "error": str(e)}), 500
+
 
 @analysis_bp.route('/filtered_sales', methods=['POST'])
 def filtered_sales():

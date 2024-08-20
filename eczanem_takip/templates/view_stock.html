@@ -5,65 +5,70 @@
 {% block styles %}
 <style>
     body {
-        background-color: #f8f9fa;
+        background-color: #ffffff; /* White background */
         font-family: Arial, sans-serif;
         display: flex;
         min-height: 100vh;
         margin: 0;
     }
 
-    .navbar-brand img {
-        width: 50px;
-        margin-right: 20px;
-    }
-
-    .wrapper {
-        display: flex;
-        width: 100%;
-    }
-
     .content {
-        margin-left: 250px; /* Aligns content next to the sidebar */
-        width: calc(100% - 250px); /* Ensures the content takes up the remaining space */
+        margin-left: 150px; /* Sidebar adjustment */
         padding: 20px;
+        width: calc(100% - 260px); /* Adjust content width */
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh; /* Full viewport height */
     }
 
     .card {
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        margin-bottom: 30px;
+        border-radius: 30px; /* Rounded corners */
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); /* Slight shadow */
+        background-color: #ffffff; /* Ensure card background is white */
+        border-color: transparent;
+        width: 100%; /* Full width of the container */
+        max-width: 1200px; /* Maximum width for larger screens */
+        padding: 20px;
     }
 
     .card-header {
-        background-color: #343a40;
-        color: #fff;
+        background-color: white; /* Consistent header color */
+        color: gray; /* Gray text */
+        font-size: 22px;
+        border-radius: 10px 10px 0 0; /* Rounded top corners */
     }
 
-    .filter-section {
+    h1 {
+        color: #343a40; /* Dark gray for big headers */
+        font-weight: bold;
         margin-bottom: 20px;
     }
 
-    .filter-section input,
-    .filter-section select {
-        margin-bottom: 10px;
+    h5 {
+        color: #6c757d; /* Light gray for smaller headers */
+        font-weight: 500;
     }
 
     #stockTable thead {
-        background-color: #343a40;
-        color: #fff;
+        background-color: #4A8BDF; /* Use primary color */
+        color: #ffffff;
     }
 
     #stockTable tbody tr:nth-child(even) {
-        background-color: #f2f2f2;
+        background-color: #f2f2f2; /* Light gray background for even rows */
     }
 
-    .btn-primary {
-        background-color: #343a40;
-        border-color: #343a40;
+    .btn-primary, .btn-secondary {
+        background-color: #4A8BDF; /* Use primary color */
+        color: #ffffff;
+        border-radius: 15px; /* Rounded corners */
+        border-color: transparent;
     }
 
-    .btn-primary:hover {
-        background-color: #23272b;
-        border-color: #23272b;
+    .btn-primary:hover, .btn-secondary:hover {
+        background-color: #3972B2; /* Darker shade on hover */
+        border-color: #3972B2;
     }
 
     .pagination-container {
@@ -73,19 +78,19 @@
     }
 
     .page-link {
-        color: #343a40;
+        color: #4A8BDF;
     }
 
     .page-link:hover {
-        color: #23272b;
+        color: #3972B2;
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container mt-5">
+<div class="content">
     <div class="card">
-        <div class="card-header">
+        <div class="card-header text-center">
             Filter Stock
         </div>
         <div class="card-body">
@@ -111,7 +116,7 @@
                 </div>
             </div>
             <div class="table-responsive">
-                <table class="table table-bordered" id="stockTable">
+                <table class="table table-bordered " id="stockTable" style="margin-top: 20px;">
                     <thead>
                         <tr>
                             <th>Medicine Name</th>
@@ -136,7 +141,6 @@
     </div>
 </div>
 {% endblock %}
-
 {% block scripts %}
 <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>

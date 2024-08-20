@@ -19,6 +19,7 @@
     .content {
         margin-left: 250px; /* Width of the sidebar */
         padding: 20px;
+        padding-top: 100px; /* Adjusted padding-top to move content lower */
         width: calc(100% - 250px);
     }
 
@@ -33,8 +34,8 @@
     }
 
     .card-header {
-        background-color: #343a40;
-        color: #fff;
+        background-color: white;
+        color: gray;
     }
 
     h1, h3 {
@@ -54,14 +55,11 @@
         background-color: #f2f2f2;
     }
 
-    .btn-primary {
-        background-color: #343a40;
-        border-color: #343a40;
-    }
-
-    .btn-primary:hover {
-        background-color: #23272b;
-        border-color: #23272b;
+    .btn-primary, .btn-secondary, .btn-success, .btn-outline-primary {
+        background-color: #4A8BDF; /* Use primary color */
+        color: #ffffff;
+        border-radius: 15px; /* Round the corners */
+        border-color: transparent;
     }
 
     .pagination-container {
@@ -139,7 +137,6 @@
     </div>
 </div>
 {% endblock %}
-
 {% block scripts %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>

@@ -21,11 +21,13 @@ def create_app():
     from analysis import analysis_bp
     from user_app import user_bp
     from stock_app import stock_bp
+    from process_image import image_bp
     from supplier_app import supplier_bp
     from routes import route_bp
     app.register_blueprint(medicine_bp, url_prefix='/api/medicines')
     app.register_blueprint(analysis_bp, url_prefix='/api/analysis')
     app.register_blueprint(user_bp, url_prefix='/api/users')
+    app.register_blueprint(image_bp, url_prefix='/api/image')
     app.register_blueprint(stock_bp, url_prefix='/api/stock')
     app.register_blueprint(route_bp, url_prefix='')
     app.register_blueprint(supplier_bp, url_prefix='/api/supplier')

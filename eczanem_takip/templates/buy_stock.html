@@ -1,38 +1,85 @@
 {% extends 'layout.html' %}
 
-{% block title %}Stok Al{% endblock %}
+{% block title %}View Sales{% endblock %}
 
 {% block styles %}
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <style>
         body {
-            background-color: #f8f9fa;
+            background-color: #ffffff;
         }
 
         .card {
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 30px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            background-color: #ffffff;
+            border-color: transparent;
+            margin-bottom: 30px;
         }
 
         .card-header {
-            background-color: #343a40;
-            color: #fff;
+            background-color: white;
+            color: gray;
+            font-size: 22px;
+            border-radius: 10px 10px 0 0;
         }
 
-        #medicinesList .list-group-item {
-            margin-bottom: 10px;
+        h1 {
+            color: #343a40;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        .filter-group label {
+            font-weight: 500;
+            color: #6c757d;
+        }
+
+        #salesTable thead {
+            background-color: #4A8BDF;
+            color: #ffffff;
+        }
+
+        #salesTable tbody tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+
+        .btn-primary, .btn-secondary {
+            background-color: #4A8BDF;
+            color: #ffffff;
+            border-radius: 15px;
+            border-color: transparent;
+        }
+
+        .btn-primary:hover, .btn-secondary:hover {
+            background-color: #3a76c1;
+            border-color: #3a76c1;
+        }
+
+        .btn-success {
+            background-color: #28a745;
+            color: #ffffff;
+            border-radius: 20px;
+            border-color: transparent;
+        }
+
+        .btn-success:hover {
+            background-color: #218838;
+            border-color: #218838;
+        }
+
+        .pagination-container {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
+            justify-content: center;
+            margin-top: 20px;
         }
 
-        #supplierDropdown {
-            width: 100%;
-            margin-bottom: 10px;
+        .page-link {
+            color: #4A8BDF;
         }
 
-        .quantity-input {
-            width: 80px;
-            margin-left: 10px;
+        .page-link:hover {
+            color: #3a76c1;
         }
 
         .medicine-actions {
@@ -40,76 +87,47 @@
             align-items: center;
         }
 
-        .btn-primary, .btn-secondary, .btn-success, .btn-outline-primary {
-            background-color: #343a40;
-            border-color: #343a40;
-            color: #fff;
-        }
-
-        .btn-primary:hover, .btn-secondary:hover, .btn-success:hover, .btn-outline-primary:hover {
-            background-color: #23272b;
-            border-color: #23272b;
-        }
-
-        /* Adjust content to account for sidebar */
-        .content {
-            margin-left: 260px; /* Sidebar width + some padding */
-            padding: 20px;
-        }
-
-        /* Modal table styling */
-        .modal-table {
-            width: 100%;
-            margin-bottom: 20px;
-        }
-
-        .modal-table th, .modal-table td {
-            padding: 10px;
-            text-align: left;
+        .medicine-actions .quantity-input {
+            width: 80px;
+            margin: 0 10px;
         }
     </style>
 {% endblock %}
 
 {% block content %}
     <div id="app">
+        <div class="container mt-5">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="text-center">Tüm İlaçlar</h2>
+                </div>
+                <div class="card-body">
+                    <form id="searchForm" class="form-inline mb-3">
+                        <input class="form-control mr-2" type="search" id="searchQuery" placeholder="Search by name" aria-label="Search">
+                        <button class="btn btn-primary" type="submit">Search</button>
+                    </form>
+                    <form id="barcodeForm" class="form-inline mb-3">
+                        <input class="form-control mr-2" type="search" id="barcodeSearchQuery" placeholder="Search by barcode" aria-label="Search">
+                        <button class="btn btn-primary" type="submit">Search</button>
+                        <button class="btn btn-outline-primary ml-2" type="button" id="toggleCameraButton">Scan Barcode</button>
+                    </form>
 
+                    <select id="supplierDropdown" class="form-control">
+                        <option value="">Select a Supplier</option>
+                    </select>
+                    <div id="medicinesList" class="list-group"></div>
+                    <nav aria-label="Medicine pagination">
+                        <ul class="pagination justify-content-center">
+                            <li class="page-item">
+                                <button class="page-link" id="prevPageButton">Previous</button>
+                            </li>
+                            <li class="page-item">
+                                <button class="page-link" id="nextPageButton">Next</button>
+                            </li>
+                        </ul>
+                    </nav>
 
-            <div class="container mt-5">
-                <h1 class="text-center mb-4">Medicine Management</h1>
-                <div class="card">
-                    <div class="card-header">
-                        All Medicines
-                    </div>
-                    <div class="card-body">
-                        <form id="searchForm" class="form-inline mb-3">
-                            <input class="form-control mr-2" type="search" id="searchQuery" placeholder="Search by name" aria-label="Search">
-                            <button class="btn btn-primary" type="submit">Search</button>
-                        </form>
-                        <form id="barcodeForm" class="form-inline mb-3">
-                            <input class="form-control mr-2" type="search" id="barcodeSearchQuery" placeholder="Search by barcode" aria-label="Search">
-                            <button class="btn btn-primary" type="submit">Search</button>
-                            <button class="btn btn-outline-primary ml-2" type="button" id="toggleCameraButton">Scan Barcode</button>
-                        </form>
-
-                        <select id="supplierDropdown" class="form-control">
-                            <option value="">Select a Supplier</option>
-                        </select>
-
-                        <button class="btn btn-secondary mb-3" id="fetchMedicinesButton">Fetch Medicines</button>
-                        <div id="medicinesList" class="list-group"></div>
-                        <nav aria-label="Medicine pagination">
-                            <ul class="pagination justify-content-center">
-                                <li class="page-item">
-                                    <button class="page-link" id="prevPageButton">Previous</button>
-                                </li>
-                                <li class="page-item">
-                                    <button class="page-link" id="nextPageButton">Next</button>
-                                </li>
-                            </ul>
-                        </nav>
-
-                        <button class="btn btn-success mt-4" id="proceedButton">Proceed</button>
-                    </div>
+                    <button class="btn btn-success mt-4" id="proceedButton">Proceed</button>
                 </div>
             </div>
         </div>

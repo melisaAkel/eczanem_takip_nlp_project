@@ -1,0 +1,200 @@
+{
+    "hepatit_tedavisi": {
+        "genel_bilgiler": {
+            "ilac_kullanimi": "Akut ve kronik viral hepatit tedavisinde kullanılan ilaçlar, gastroenteroloji veya enfeksiyon hastalıkları uzman hekimlerinden biri tarafından düzenlenen sağlık raporuna dayanılarak bu uzman hekimler ile çocuk sağlığı ve hastalıkları veya iç hastalıkları uzman hekimleri tarafından reçete edilir."
+        },
+        "kronik_hepatit_b": {
+            "tedavi_baslangici": {
+                "kosullar": {
+                    "hbv_dna_seviyesi": "10.000 (10^4) kopya/ml (2.000 IU/ml) veya üzerinde olmalıdır.",
+                    "rapor_ve_tetkik": [
+                        "HBV DNA sonucu",
+                        "Karaciğer biyopsi raporu"
+                    ],
+                    "detaylar": {
+                        "erisken": {
+                            "karaciğer_biyopsisi": {
+                                "histolojik_aktivite_indeksi": "≥6",
+                                "fibrozis": "≥2"
+                            }
+                        },
+                        "cocuk": {
+                            "yas_grubu_2_18": {
+                                "alt_yuksekliği": "ALT normalin üst sınırının 2 katından daha yüksek",
+                                "karaciğer_biyopsisi": {
+                                    "histolojik_aktivite_indeksi": "≥4",
+                                    "fibrozis": "ALT düzeyine bakılmaksızın fibrozis ≥2"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "tedavi_yontemleri": {
+                "pegile_interferonlar": {
+                    "erisken": {
+                        "kosullar": [
+                            "ALT normalin üst sınırının 2 katını geçen",
+                            "HBeAg negatif ve HBV DNA ≤ 10^7 kopya/ml",
+                            "HBeAg pozitif ve HBV DNA ≤ 10^9 kopya/ml"
+                        ],
+                        "tedavi_suresi": "En fazla 48 hafta"
+                    },
+                    "cocuk": {
+                        "tedavi_suresi": "24 hafta",
+                        "ikinci_tedavi_sartlari": [
+                            "İlk tedavi bitiminden en az 1 yıl sonra koşulları tekrar taşıyan hastalar",
+                            "En fazla 24 haftalık ikinci tedavi"
+                        ]
+                    }
+                },
+                "oral_antiviraller": {
+                    "erişkin": {
+                        "baslangic_dozu": [
+                            "Günde 100 mg lamivudin",
+                            "600 mg telbivudin",
+                            "245 mg tenofovir disoproksil fumarat",
+                            "0,5 mg entekavir",
+                            "25 mg tenofovir alafenamid fumarat"
+                        ],
+                        "tedavi_devami": {
+                            "lamivudin_veya_telbivudin": [
+                                "24. haftada HBV DNA > 50 IU/ml (300 kopya/ml): Diğer antiviraller kullanılabilir",
+                                "HBV DNA ≤ 50 IU/ml (300 kopya/ml): Başka bir antiviral eklenemez"
+                            ],
+                            "negatif_hbv_dna_pozitiflesme": "HBV DNA’nın pozitifleşmesi veya 10 kat artması durumunda başka bir antiviral eklenebilir",
+                            "tenofovir_veya_entekavir": [
+                                "İlk yıl sonunda HBV DNA pozitifse: Antiviraller arasında geçiş yapılabilir veya birleştirilebilir"
+                            ],
+                            "gebelik": "Oral antiviral değişiminde bu koşullar aranmaz",
+                            "yan_etki": "Yan etki gelişmesi durumunda koşul aranmaksızın başka bir antivirale geçilebilir"
+                        },
+                        "tedavi_suresi": "HBsAg negatif olduktan sonra Anti-HBs pozitifleştikten sonra en fazla 12 ay daha"
+                    },
+                    "cocuk": {
+                        "yas_grubu_2_18": [
+                            {
+                                "yas_araligi": "2-18 yaş",
+                                "ilaclar": [
+                                    "Lamivudin: 3 mg/kg/gün (maksimum 100 mg/gün)",
+                                    "Tenofovir disoproksil fumarat: 245 mg/gün",
+                                    "Tenofovir alafenamid fumarat: 25 mg/gün",
+                                    "Entekavir: 0,5 mg/gün (16-18 yaş)"
+                                ]
+                            }
+                        ],
+                        "tedavi_devami": {
+                            "lamivudin": [
+                                "24. haftada HBV DNA > 50 IU/ml (300 kopya/ml) olan hastalarda, yaş grubu göz önüne alınarak tenofovir veya entekavir kullanılabilir.",
+                                "HBV DNA ≤ 50 IU/ml ise başka bir oral antiviral eklenemez."
+                            ],
+                            "negatif_hbv_dna_pozitiflesme": "HBV DNA’nın pozitifleşmesi veya 10 kat artması durumunda yaş grubu göz önüne alınarak başka bir antiviral eklenebilir.",
+                            "tenofovir_ve_entekavir": [
+                                "Birinci yılın sonunda HBV DNA pozitifse, antiviraller arasında geçiş yapılabilir veya birleştirilebilir."
+                            ],
+                            "yan_etki": "Yan etki gelişmesi durumunda koşul aranmaksızın çocuğun yaşı göz önüne alınarak başka bir antivirale geçilebilir.",
+                            "oral_antiviral_degisim_ve_ekleme": "Gerekçe mevcut raporda veya düzenlenecek yeni raporda belirtilir."
+                        }
+                    }
+                }
+            },
+            "oral_antiviral_tedavinin_sonlandirilmasi": {
+                "kosullar": [
+                    "Her yenilenen raporda HBsAg pozitifliği veya negatifliği raporda belirtilmelidir.",
+                    "Oral antiviral tedavi, HBsAg negatif hastalarda Anti-HBs pozitifleştikten sonra en fazla 12 ay daha sürdürülür."
+                ]
+            }
+        },
+        "hepatit_b_karaciger_sirozu": {
+            "tedavi": {
+                "kosullar": "Karaciğer sirozunda HBV DNA (+) olan hastalarda tedaviye başlanabilir. Tedavi süreleri, HBV DNA (+) olanlar için kronik hepatit B tedavisinde olduğu gibidir."
+            }
+        },
+        "immunsupresif_ilac_tedavisi": {
+            "tedavi": {
+                "kosullar": [
+                    "İmmünsupresif ilaç tedavisi veya sitotoksik kemoterapi veya monoklonal antikor tedavisi uygulanmakta olan HBsAg (+) hastalarda, ALT yüksekliği, HBV DNA pozitifliği ve karaciğer biyopsisi koşulu aranmaksızın tedavi uygulanır.",
+                    "Tedavi süresi bu tedavi sonlandıktan sonra en fazla 12 ay daha devam eder.",
+                    "HBsAg negatif olup HBV DNA pozitif ve/veya Anti-HBc pozitif olan hastalarda da antiviral tedavi kullanılabilir."
+                ]
+            }
+        },
+        "karaciger_transplantasyonu": {
+            "tedavi": {
+                "kosullar": "HBV’ye bağlı karaciğer hastalığından dolayı karaciğer transplantasyonu yapılan hastalar veya Anti-HBc(+) kişiden karaciğer alan hastalara; biyopsi, viral seroloji, ALT seviyesi veya HBV DNA bakılmaksızın oral antiviral tedavi verilebilir."
+            }
+        },
+        "kronik_hepatit_d": {
+            "tedavi": {
+                "pegile_interferonlar": {
+                    "kosullar": "Delta ajanlı Kronik Hepatit B tanısı konmuş anti HDV(+) hastalarda kronik hepatit B’deki kullanım süre ve dozunda kullanılabilir. Tedavi koşullarını taşıyanlarda oral antiviral ilaçlar eklenebilir."
+                },
+                "biyopsi_kosullari": "Hepatit B’de belirtilen biyopsi koşulları geçerlidir."
+            }
+        },
+        "kronik_hepatit_c": {
+            "genel_hukumler": {
+                "HCV_RNA_pozitiflik": "HCV RNA pozitifliğine bakılır.",
+                "kompanse_karaciger_sirozu": "Trombosit sayısının 150.000/mm³’ün altında veya protrombin zamanının 3 saniye ve/veya üzerinde olması koşulu aranır.",
+                "dekompanse_karaciger_sirozu": "Asit sıvısının varlığı, hepatik ensefalopati, sarılık veya özefagus varis kanaması olması koşulları aranır."
+            },
+            "tedavi_detaylari": {
+                "eriskin_hastalar": {
+                    "nonsirotik_hastalar": {
+                        "tedavi_suresi": [
+                            "Sofosbuvir+Velpatasvir+Voxilaprevir ile toplam 8 hafta",
+                            "Glekaprevir+Pibrentasvir ile toplam 8 hafta"
+                        ]
+                    },
+                    "kompanse_sirotik_hastalar": {
+                        "tedavi_suresi": [
+                            "Sofosbuvir+Velpatasvir+Voxilaprevir ile toplam 12 hafta",
+                            "Glekaprevir+Pibrentasvir ile toplam 8 hafta"
+                        ]
+                    },
+                    "dekompanse_sirotik_hastalar": {
+                        "genotip_1a_1b_4_5_6": "Sofosbuvir+Ledipasvir + Ribavirin ile tedavi süresi toplam 12 hafta"
+                    }
+                },
+                "cocuk_hastalar": {
+                    "genotip_tayini": "HCV RNA’sı pozitif hastalarda Genotip tayini ile tedaviye başlanabilir.",
+                    "tedavi_suresi": [
+                        "Genotip 1 ve Genotip 4 için tedavi süresi toplam 48 hafta",
+                        "16. haftada HCV RNA pozitifliği devam eden hastalarda tedavi en geç 28. hafta sonunda kesilir."
+                    ],
+                    "tedavi_yeniden": {
+                        "daha_once_tedavi_almamis_cocuklar": "Genotip tayinine gerek duyulmaksızın Glekaprevir+Pibrentasvir ile tedavi süresi toplam 8 haftadır.",
+                        "tedavi_denemeli_cocuklar": {
+                            "genotip_1": "Sofosbuvir+Ledipasvir ile tedavi süresi nonsirotik hastalarda 12 hafta, kompanse sirozu olan hastalarda toplam 24 hafta",
+                            "genotip_4_5_6": "Sofosbuvir+Ledipasvir ile tedavi süresi nonsirotik veya kompanse sirozu olan hastalarda toplam 12 haftadır."
+                        }
+                    }
+                }
+            }
+        },
+        "akut_hepatit_c": {
+            "tedavi": {
+                "kosullar": [
+                    "Akut hepatit C tedavisinde kullanılan ilaçlar gastroenteroloji veya enfeksiyon hastalıkları uzman hekimlerinden biri tarafından düzenlenen ilaç kullanım raporuna dayanılarak reçete edilir.",
+                    "Tedavi süresi 24 hafta, onaylanmış Kısa Ürün Bilgisinde tanımlanan dozlarda pegile interferon alfa monoterapisi uygulanır.",
+                    "Tedaviye ribavirin eklenemez.",
+                    "Karaciğer biyopsisi ve 12. haftada HCV RNA seviyesinde 2 log azalma koşulu aranmaz."
+                ]
+            }
+        },
+        "karaciger_biyopsisi": {
+            "genel_prensipler": {
+                "kurallar": "Karaciğer biyopsisi ile ilgili kurallar Ishak skorlamasına göre (pediatrik hastalarda Knodell skorlamasına göre) belirlenmiştir.",
+                "kontrendikasyon": [
+                    "PT de 3 sn den fazla uzama veya trombosit sayısı <80.000 /mm3",
+                    "Kanama eğilimini artıran hastalıklar",
+                    "Kronik böbrek yetmezliği/böbrek nakli",
+                    "Biyopsiye engel olacak konumda bir yer kaplayıcı lezyonun varlığı",
+                    "Karaciğer sirozu veya karaciğer nakli",
+                    "Gebelik",
+                    "Ciddi yeti yitimine neden olan psikotik bozukluk ve zeka geriliği (biyopsi uyumunun olmadığının psikiyatri uzman hekimlerince sağlık kurulu raporunda belirtilmesi koşuluyla)"
+                ]
+            }
+        }
+    }
+}
