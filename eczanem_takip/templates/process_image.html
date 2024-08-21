@@ -1,0 +1,212 @@
+{% extends 'layout.html' %}
+
+{% block title %}Process Image or Text{% endblock %}
+
+{% block styles %}
+<style>
+    .upload-container {
+        background: #ffffff;
+        padding: 40px;
+        border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        max-width: 600px;
+        margin: 0 auto;
+        text-align: center;
+    }
+
+    .upload-container h1 {
+        color: #333;
+        margin-bottom: 20px;
+        font-size: 24px;
+        font-weight: 700;
+    }
+
+    .upload-container input[type="file"],
+    .upload-container textarea {
+        margin: 20px 0;
+        padding: 10px;
+        font-size: 16px;
+        border-radius: 8px;
+        border: 1px solid #ddd;
+        width: 100%;
+    }
+
+    .upload-container button {
+        background: #4A8BDF;
+        color: #fff;
+        border: none;
+        padding: 15px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: 600;
+        width: 100%;
+        margin-top: 20px;
+    }
+
+    .upload-container button:hover {
+        background: #69bff8;
+    }
+
+    .result-container {
+        margin-top: 20px;
+        font-size: 16px;
+        color: #333;
+        text-align: left;
+    }
+
+    .result-container h3 {
+        font-size: 18px;
+        font-weight: bold;
+        margin-bottom: 10px;
+    }
+
+    .result-container p {
+        background-color: #f0f4f7;
+        padding: 10px;
+        border-radius: 8px;
+        border: 1px solid #ddd;
+        min-height: 50px;
+    }
+
+    .toggle-input {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 20px;
+    }
+
+    .toggle-input button {
+        width: 48%;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="upload-container">
+    <h1>Image veya Metin İşleme</h1>
+    <div class="toggle-input">
+        <button id="useImageButton">Resim Yükle</button>
+        <button id="useTextButton">Metin Gir</button>
+    </div>
+    <form id="imageForm" style="display: none;">
+        <input type="file" id="imageFile" accept="image/*">
+        <button type="submit">Resmi Gönder</button>
+    </form>
+    <form id="textForm" style="display: none;">
+        <textarea id="manualText" rows="6" placeholder="Metni buraya girin..."></textarea>
+        <button type="submit">Metni Gönder</button>
+    </form>
+    <div class="result-container" id="extractedTextContainer">
+        <h3>Extracted Text:</h3>
+        <p id="extractedText">Henüz bir metin yok.</p>
+    </div>
+    <div class="result-container" id="validationResultContainer">
+        <h3>Validation Result:</h3>
+        <p id="validationMessage">Henüz bir sonuç yok.</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.getElementById('useImageButton').addEventListener('click', function() {
+        document.getElementById('imageForm').style.display = 'block';
+        document.getElementById('textForm').style.display = 'none';
+    });
+
+    document.getElementById('useTextButton').addEventListener('click', function() {
+        document.getElementById('textForm').style.display = 'block';
+        document.getElementById('imageForm').style.display = 'none';
+    });
+
+    // Handle image form submission
+    document.getElementById('imageForm').addEventListener('submit', async function(event) {
+        event.preventDefault();
+
+        const fileInput = document.getElementById('imageFile');
+        const file = fileInput.files[0];
+        if (!file) {
+            alert('Lütfen bir resim yükleyin.');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            const response = await fetch('http://localhost:5000/api/image/process_image', {
+                method: 'POST',
+                body: formData
+            });
+
+            const result = await response.json();
+            if (response.ok) {
+                document.getElementById('extractedText').innerText = result.ExtractedText || 'Metin bulunamadı.';
+
+                // Validate extracted text directly
+                await validateExtractedText(result.ExtractedText);
+            } else {
+                document.getElementById('extractedText').innerText = 'Resim işleme başarısız oldu: ' + result.error;
+            }
+        } catch (error) {
+            alert('Bir hata oluştu: ' + error.message);
+        }
+    });
+
+    // Handle text form submission
+    document.getElementById('textForm').addEventListener('submit', async function(event) {
+        event.preventDefault();
+
+        const manualText = document.getElementById('manualText').value.trim();
+        if (!manualText) {
+            alert('Lütfen bir metin girin.');
+            return;
+        }
+
+        try {
+            // Set the extracted text manually in the session
+            const response = await fetch('http://localhost:5000/api/image/set_extracted_text', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ extracted_text: manualText })
+            });
+
+            const result = await response.json();
+            if (response.ok) {
+                document.getElementById('extractedText').innerText = manualText || 'Metin bulunamadı.';
+
+                // Validate manually provided text directly
+                await validateExtractedText(manualText);
+            } else {
+                document.getElementById('extractedText').innerText = 'Metin işleme başarısız oldu: ' + result.error;
+            }
+        } catch (error) {
+            alert('Bir hata oluştu: ' + error.message);
+        }
+    });
+
+    // Function to validate extracted text
+    async function validateExtractedText(text) {
+        try {
+            const validationResponse = await fetch('http://localhost:5000/api/image/validate_report', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ extracted_text: text })
+            });
+
+            const validationResult = await validationResponse.json();
+            if (validationResponse.ok) {
+                document.getElementById('validationMessage').innerText = validationResult.message || 'Doğrulama sonucu bulunamadı.';
+            } else {
+                document.getElementById('validationMessage').innerText = 'Doğrulama başarısız oldu.';
+            }
+        } catch (error) {
+            alert('Bir hata oluştu: ' + error.message);
+        }
+    }
+</script>
+{% endblock %}

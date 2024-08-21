@@ -12,6 +12,9 @@ def login_required(f):
     return wrap
 
 
+@route_bp.route('/image_process')
+def image_process():
+    return render_template('process_image.html')
 
 @route_bp.route('/view_sales')
 @login_required
