@@ -9,9 +9,11 @@ import json
 import re
 import openai
 
+import os
 image_bp = Blueprint('image', __name__)
 
-# Configure your OpenAI API key
+secret_key = os.getenv('SECRET_KEY')
+openai.api_key =  secret_key
 
 def classify_hepatitis_type(text):
     # Convert text to lowercase for normalization

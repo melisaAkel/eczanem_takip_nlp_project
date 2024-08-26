@@ -7,6 +7,8 @@ services:
     volumes:
       - .:/app
     working_dir: /app
+    environment:
+      SECRET_KEY: ${SECRET_KEY}
     command: python app.py
   db:
     image: mysql:5.7

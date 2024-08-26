@@ -1,0 +1,23 @@
+# Ignore .env file for sensitive environment variables
+.env
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Node modules (if applicable)
+node_modules/
+
+# Log files
+*.log
+
+# Ignore database files
+*.sqlite3
+
+# Ignore Docker-related files
+docker-compose.override.yml
+
+# Ignore virtual environments
+venv/
+.venv/
