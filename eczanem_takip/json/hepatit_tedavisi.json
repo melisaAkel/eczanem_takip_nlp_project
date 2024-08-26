@@ -13,18 +13,33 @@
                     ],
                     "detaylar": {
                         "erisken": {
-                            "karaciğer_biyopsisi": {
-                                "histolojik_aktivite_indeksi": "≥6",
-                                "fibrozis": "≥2"
-                            }
+                            "koşullar": [
+                                {
+                                    "histolojik_aktivite_indeksi": "≥6"
+                                },
+                                {
+                                    "fibrozis": "≥2"
+                                }
+                            ],
+                            "operatör": "\"fibrozis\": \"≥2\" veya or || \"histolojik_aktivite_indeksi\": \"≥6\""
                         },
                         "cocuk": {
                             "yas_grubu_2_18": {
-                                "alt_yuksekliği": "ALT normalin üst sınırının 2 katından daha yüksek",
-                                "karaciğer_biyopsisi": {
-                                    "histolojik_aktivite_indeksi": "≥4",
-                                    "fibrozis": "ALT düzeyine bakılmaksızın fibrozis ≥2"
-                                }
+                                "koşullar": [
+                                    {
+                                        "alt_yuksekliği": "ALT normalin üst sınırının 2 katından daha yüksek",
+                                        "karaciğer_biyopsisi": {
+                                            "histolojik_aktivite_indeksi": "≥4"
+                                        }
+                                    },
+                                    {
+                                        "alt_yuksekliğine_bakılmaksızın": true,
+                                        "karaciğer_biyopsisi": {
+                                            "fibrozis": "≥2"
+                                        }
+                                    }
+                                ],
+                                "operatör": "\"fibrozis\": \"≥2\" veya or  || \"histolojik_aktivite_indeksi\": \"≥4\""
                             }
                         }
                     }

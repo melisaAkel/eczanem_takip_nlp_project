@@ -26,6 +26,9 @@ ENV TESSDATA_PREFIX=/usr/share/tesseract-ocr/5/tessdata/
 COPY requirements.txt requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Download the spaCy language model (en_core_web_sm)
+RUN python -m spacy download en_core_web_sm
+
 # Copy the application code
 COPY . .
 
