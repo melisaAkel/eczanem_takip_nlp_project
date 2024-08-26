@@ -12,7 +12,7 @@ nlp = spacy.load("en_core_web_sm")
 # Define custom patterns for entity extraction
 patterns = [
     {"label": "DIALYSATE_CALCIUM",
-     "pattern": [{"LOWER": "diyalizat"}, {"LOWER": "kalsiyum"}, {"LIKE_NUM": True}, {"TEXT": ".", "OP": "?"}, {"LIKE_NUM": True, "OP": "?"}, {"LOWER": "mmol"}, {"LOWER": "/"}, {"TEXT": "L"}]},
+     "pattern": [{"LOWER": "diyalizat"}, {"LOWER": "kalsiyum"}, {"IS_PUNCT": True, "OP": "?"} ,{"LIKE_NUM": True}, {"TEXT": ".", "OP": "?"}, {"LIKE_NUM": True, "OP": "?"}, {"LOWER": "mmol"}, {"LOWER": "/"}, {"TEXT": "L"}]},
     {"label": "ALBUMIN",
      "pattern": [{"LOWER": "albümin"}, {"IS_PUNCT": True, "OP": "?"}, {"LIKE_NUM": True}, {"TEXT": ".", "OP": "?"}, {"LIKE_NUM": True, "OP": "?"}, {"LOWER": "g"}, {"LOWER": "/"}, {"TEXT": "L"}]},
     {"label": "PTH",
@@ -22,9 +22,91 @@ patterns = [
     {"label": "CALCIUM",
      "pattern": [{"LOWER": "kalsiyum"}, {"IS_PUNCT": True, "OP": "?"}, {"LIKE_NUM": True}, {"TEXT": ".", "OP": "?"}, {"LIKE_NUM": True, "OP": "?"}, {"LOWER": "mg"}, {"LOWER": "/"}, {"LOWER": "dl"}]},
     {"label": "DIAGNOSIS",
-     "pattern": [{"LOWER": "tanı"}, {"LOWER": "kronik"}, {"LOWER": "böbrek"}, {"LOWER": "yetmezliği"}, {"LOWER": "tanımlanmamış", "OP":"?"}]},
-    {"label": "MEDICATION",
-     "pattern": [{"LOWER": "parikalsitol"}, {"LOWER": "parenteral"}, {"LOWER": "haftada"}, {"IS_DIGIT": True}, {"LOWER": "x"}, {"IS_DIGIT": True}, {"LOWER": "µg"}]}
+     "pattern": [{"LOWER": "tanı"}, {"IS_PUNCT": True, "OP": "?"}, {"LOWER": "kronik"}, {"LOWER": "böbrek"}, {"LOWER": "yetmezliği"}]},
+    {
+        "label": "MEDICATION",
+        "pattern": [
+            {"LOWER": "parikalsitol"}
+        ]
+    },
+    {
+        "label": "MEDICATION_FORM",
+        "pattern": [
+            {"LOWER": "oral"}
+        ]
+    },
+    {
+        "label": "DOCTOR",
+        "pattern": [
+            {"LOWER": "iç"},
+            {"LOWER": "hastalıkları"}
+        ]
+    }
+,{
+    "label": "DOCTOR",
+    "pattern": [
+        {"TEXT": "İç"},
+        {"LOWER": "hastalıkları"}
+    ]
+},{
+    "label": "DOCTOR",
+    "pattern": [
+        {"TEXT": "İÇ"},
+        {"LOWER": "hastalıkları"}
+    ]
+},{
+    "label": "DOCTOR",
+    "pattern": [
+        {"LOWER": "diyaliz"},
+        {"IS_PUNCT": True, "OP": "?"},
+        {"LOWER": "sertifikalı"}
+    ]
+}
+,
+{
+    "label": "DATE",
+    "pattern": [
+        {"TEXT": "0","OP":"+"},
+        {"LIKE_NUM": True},
+        {"TEXT": "/"},
+        {"TEXT": "0","OP":"+"},
+        {"LIKE_NUM": True},
+        {"TEXT": "/"},
+        {"LIKE_NUM": True}
+    ]
+},
+{
+    "label": "DOCTOR",
+    "pattern": [
+        {"LOWER": "çocuk"},
+        {"IS_PUNCT": True, "OP": "?"},
+        {"LOWER": "sagligi"}
+    ]
+}
+,
+{
+    "label": "DOCTOR",
+    "pattern": [
+        {"LOWER": "nefroloji"}
+    ]
+}
+,
+    {
+        "label": "TYPE",
+        "pattern": [
+            {"LOWER": "periton"},
+            {"IS_PUNCT": True, "OP": "?"},
+            {"LOWER": "diyalizi"}
+        ]
+    },
+{
+    "label": "TYPE",
+    "pattern": [
+        {"LOWER": "hemodiyaliz"}
+    ]
+}
+
+
 ]
 
 # Add the patterns to the matcher

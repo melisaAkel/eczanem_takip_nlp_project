@@ -8,7 +8,6 @@ import numpy as np
 import json
 import re
 import openai
-
 import os
 image_bp = Blueprint('image', __name__)
 
