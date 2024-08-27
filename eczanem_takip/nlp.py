@@ -234,7 +234,7 @@ def nlp_check():
         ilk_rapor_mu=ilk_rapor_mu,
         lab_result_date=lab_result_date
     )
-
+    print("")
     return jsonify({
         "decision": decision,
         "extracted": extracted_entities,
