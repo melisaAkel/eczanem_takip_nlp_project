@@ -97,6 +97,14 @@ patterns = [
      "pattern": [
          {"LOWER": "nefroloji"}
      ]},
+    {"label": "MEDICATION_FORM",
+     "pattern": [
+         {"LOWER": "oral"}
+     ]},
+    {"label": "MEDICATION_FORM",
+     "pattern": [
+         {"LOWER": "parenteral"}
+     ]},
     {"label": "TYPE",
      "pattern": [
          {"LOWER": "periton"},
@@ -212,8 +220,18 @@ def nlp_check():
     calcium_duzey = extract_value(extracted_entities.get('CALCIUM', ['0'])[0], "mg/dL")
 
     # Determine patient type and treatment form based on extracted entities
-    hasta_tipi = 'hemodiyaliz' if 'hemodiyaliz' in extracted_entities.get('TYPE', []) else 'periton_diyalizi'
-    tedavi_formu = 'parenteral' if 'parenteral' in extracted_entities.get('MEDICATION_FORM', []) else 'oral'
+    def get_value_from_list(entity_list, target_value):
+        for item in entity_list:
+            if target_value.lower() in item.lower():
+                return True
+        return False
+
+        # Determine patient type (hasta_tipi) and treatment form (tedavi_formu)
+
+    hasta_tipi = 'hemodiyaliz' if get_value_from_list(extracted_entities.get('TYPE', []),
+                                                      'hemodiyaliz') else 'periton_diyalizi'
+    tedavi_formu = 'parenteral' if get_value_from_list(extracted_entities.get('MEDICATION_FORM', []),
+                                                       'parenteral') else 'oral'
     doktor_tipi = extracted_entities.get('DOCTOR', [''])[0]  # Normalize doctor type
 
     # Simulate lab result date; replace with actual logic
@@ -267,20 +285,20 @@ def parikalsitol_karar_al(pth_duzeyi, alt_artisi_var_mi, albumin_duzey, fosfor_d
         # Additional checks based on patient type and doctor specialization
         if hasta_tipi == "hemodiyaliz" and tedavi_formu == "parenteral":
             if doktor_tipi.lower() in ["nefroloji", "iç hastalıkları", "çocuk sagligi", "diyaliz sertifikali"]:
-                return f"Hemodiyaliz hastaları için parenteral Parikalsitol reçete edilebilir. PTH: {pth_duzeyi}, Albümin: {albumin_duzey}, Fosfor: {fosfor_duzey}, Doktor: {doktor_tipi}"
+                return f"1 Hemodiyaliz hastaları için parenteral Parikalsitol reçete edilebilir. PTH: {pth_duzeyi}, Albümin: {albumin_duzey}, Fosfor: {fosfor_duzey}, Doktor: {doktor_tipi}"
             elif doktor_tipi in ["İç hastalıkları", "İç Hastalıkları"]:
-                return f"Hemodiyaliz hastaları için parenteral Parikalsitol reçete edilebilir. PTH: {pth_duzeyi}, Albümin: {albumin_duzey}, Fosfor: {fosfor_duzey}, Doktor: {doktor_tipi}"
+                return f"2 Hemodiyaliz hastaları için parenteral Parikalsitol reçete edilebilir. PTH: {pth_duzeyi}, Albümin: {albumin_duzey}, Fosfor: {fosfor_duzey}, Doktor: {doktor_tipi}"
             else:
-                return f"Tedaviyi reçete eden doktor yetkili değil. Doktor: {doktor_tipi}, PTH: {pth_duzeyi}, Albümin: {albumin_duzey}, Fosfor: {fosfor_duzey}"
+                return f"3 Tedaviyi reçete eden doktor yetkili değil. Doktor: {doktor_tipi}, PTH: {pth_duzeyi}, Albümin: {albumin_duzey}, Fosfor: {fosfor_duzey}"
         elif hasta_tipi == "periton_diyalizi" and tedavi_formu == "oral":
             if doktor_tipi.lower() == "nefroloji":
-                return f"Periton diyalizi hastaları için oral Parikalsitol reçete edilebilir. PTH: {pth_duzeyi}, Albümin: {albumin_duzey}, Fosfor: {fosfor_duzey}, Doktor: {doktor_tipi}"
+                return f"4 Periton diyalizi hastaları için oral Parikalsitol reçete edilebilir. PTH: {pth_duzeyi}, Albümin: {albumin_duzey}, Fosfor: {fosfor_duzey}, Doktor: {doktor_tipi}"
             else:
-                return f"Tedaviyi reçete eden doktor yetkili değil. Doktor: {doktor_tipi}, PTH: {pth_duzeyi}, Albümin: {albumin_duzey}, Fosfor: {fosfor_duzey}"
+                return f"5 Tedaviyi reçete eden doktor yetkili değil. Doktor: {doktor_tipi}, PTH: {pth_duzeyi}, Albümin: {albumin_duzey}, Fosfor: {fosfor_duzey}"
         else:
-            return f"Tedavi koşulları sağlanıyor ancak hasta tipi veya tedavi formu uygun değil. Hasta Tipi: {hasta_tipi}, Tedavi Formu: {tedavi_formu}"
+            return f"6 Tedavi koşulları sağlanıyor ancak hasta tipi veya tedavi formu uygun değil. Hasta Tipi: {hasta_tipi}, Tedavi Formu: {tedavi_formu}"
     else:
-        return f"Parikalsitol tedavisi başlatılamaz. PTH {pth_duzeyi} koşulları sağlanmamış."
+        return f"7 Parikalsitol tedavisi başlatılamaz. PTH {pth_duzeyi} koşulları sağlanmamış."
 
     # If none of the above conditions are met, default to this:
     return f"Tedaviye devam edilebilir; uygun rapor ve test sonuçları gerekmektedir. PTH: {pth_duzeyi}, Albümin: {albumin_duzey}, Fosfor: {fosfor_duzey}, Hasta Tipi: {hasta_tipi}, Tedavi Formu: {tedavi_formu}, Doktor: {doktor_tipi}"
