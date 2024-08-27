@@ -9,8 +9,6 @@ import openai
 
 image_bp = Blueprint('image', __name__)
 
-# Configure your OpenAI API key
-
 def load_hepatit_guide():
     with open('json/hepatit_tedavisi.jsonl', 'r', encoding='utf-8') as file:
         return json.load(file)
