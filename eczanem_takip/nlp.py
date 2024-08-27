@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+import re
 from flask import Blueprint, request, jsonify, session
 import spacy
 from spacy.matcher import Matcher
@@ -9,104 +10,117 @@ nlp_bp = Blueprint('nlp', __name__)
 # Load the spaCy model
 nlp = spacy.load("en_core_web_sm")
 
-# Define custom patterns for entity extraction
 patterns = [
     {"label": "DIALYSATE_CALCIUM",
-     "pattern": [{"LOWER": "diyalizat"}, {"LOWER": "kalsiyum"}, {"IS_PUNCT": True, "OP": "?"} ,{"LIKE_NUM": True}, {"TEXT": ".", "OP": "?"}, {"LIKE_NUM": True, "OP": "?"}, {"LOWER": "mmol"}, {"LOWER": "/"}, {"TEXT": "L"}]},
+     "pattern": [
+         {"TEXT": {"REGEX": r"(?i)^diyalizat$"}},
+         {"TEXT": {"REGEX": r"(?i)^kalsiyum(un(un)?)?$"}},
+         {"TEXT": {"REGEX": r"^\d+(\.\d+)?$"}},
+         {"TEXT": ".", "OP": "?"},
+         {"TEXT": {"REGEX": r"^\d+$"}, "OP": "?"},
+         {"IS_SPACE": True, "OP": "?"},
+         {"LOWER": "mmol"},
+         {"LOWER": "/"},
+         {"LOWER": {"IN": ["l", "it"]}}
+     ]},
     {"label": "ALBUMIN",
-     "pattern": [{"LOWER": "albümin"}, {"IS_PUNCT": True, "OP": "?"}, {"LIKE_NUM": True}, {"TEXT": ".", "OP": "?"}, {"LIKE_NUM": True, "OP": "?"}, {"LOWER": "g"}, {"LOWER": "/"}, {"TEXT": "L"}]},
+     "pattern": [
+         {"LOWER": {"IN": ["albumin", "albümin"]}},
+         {"IS_PUNCT": True, "OP": "?"},
+         {"TEXT": {"REGEX": r"^\d+(\.\d+)?(mg|µg|g|dl)?$"}},  # Captures numbers with or without attached units
+     ]},
     {"label": "PTH",
-     "pattern": [{"LOWER": "pth"}, {"IS_PUNCT": True, "OP": "?"}, {"LIKE_NUM": True}, {"TEXT": ".", "OP": "?"}, {"LIKE_NUM": True, "OP": "?"}, {"LOWER": "µg"}, {"LOWER": "/"}, {"TEXT": "L"}]},
+     "pattern": [
+         {"LOWER": "pth"},
+         {"IS_PUNCT": True, "OP": "?"},
+         {"TEXT": {"REGEX": r"^\d+(\.\d+)?(µg|ug)?$"}},  # Captures numbers with or without attached units
+     ]},
     {"label": "PHOSPHORUS",
-     "pattern": [{"LOWER": "fosfor"}, {"IS_PUNCT": True, "OP": "?"}, {"LIKE_NUM": True}, {"TEXT": ".", "OP": "?"}, {"LIKE_NUM": True, "OP": "?"}, {"LOWER": "mg"}, {"LOWER": "/"}, {"LOWER": "dl"}]},
+     "pattern": [
+         {"LOWER": {"IN": ["fosfor", "p"]}},
+         {"IS_PUNCT": True, "OP": "?"},
+         {"TEXT": {"REGEX": r"^\d+(\.\d+)?(mg|µg|g|dl)?$"}},  # Captures numbers with or without attached units
+     ]},
     {"label": "CALCIUM",
-     "pattern": [{"LOWER": "kalsiyum"}, {"IS_PUNCT": True, "OP": "?"}, {"LIKE_NUM": True}, {"TEXT": ".", "OP": "?"}, {"LIKE_NUM": True, "OP": "?"}, {"LOWER": "mg"}, {"LOWER": "/"}, {"LOWER": "dl"}]},
+     "pattern": [
+         {"LOWER": {"IN": ["kalsiyum", "ca"]}},
+         {"IS_PUNCT": True, "OP": "?"},
+         {"TEXT": {"REGEX": r"^\d+(\.\d+)?(mg|µg|g|dl)?$"}},  # Captures numbers with or without attached units
+     ]},
     {"label": "DIAGNOSIS",
-     "pattern": [{"LOWER": "tanı"}, {"IS_PUNCT": True, "OP": "?"}, {"LOWER": "kronik"}, {"LOWER": "böbrek"}, {"LOWER": "yetmezliği"}]},
-    {
-        "label": "MEDICATION",
-        "pattern": [
-            {"LOWER": "parikalsitol"}
-        ]
-    },
-    {
-        "label": "MEDICATION_FORM",
-        "pattern": [
-            {"LOWER": "oral"}
-        ]
-    },
-    {
-        "label": "DOCTOR",
-        "pattern": [
-            {"LOWER": "iç"},
-            {"LOWER": "hastalıkları"}
-        ]
-    }
-,{
-    "label": "DOCTOR",
-    "pattern": [
-        {"TEXT": "İç"},
-        {"LOWER": "hastalıkları"}
-    ]
-},{
-    "label": "DOCTOR",
-    "pattern": [
-        {"TEXT": "İÇ"},
-        {"LOWER": "hastalıkları"}
-    ]
-},{
-    "label": "DOCTOR",
-    "pattern": [
-        {"LOWER": "diyaliz"},
-        {"IS_PUNCT": True, "OP": "?"},
-        {"LOWER": "sertifikalı"}
-    ]
-}
-,
-{
-    "label": "DATE",
-    "pattern": [
-        {"TEXT": "0","OP":"+"},
-        {"LIKE_NUM": True},
-        {"TEXT": "/"},
-        {"TEXT": "0","OP":"+"},
-        {"LIKE_NUM": True},
-        {"TEXT": "/"},
-        {"LIKE_NUM": True}
-    ]
-},
-{
-    "label": "DOCTOR",
-    "pattern": [
-        {"LOWER": "çocuk"},
-        {"IS_PUNCT": True, "OP": "?"},
-        {"LOWER": "sagligi"}
-    ]
-}
-,
-{
-    "label": "DOCTOR",
-    "pattern": [
-        {"LOWER": "nefroloji"}
-    ]
-}
-,
-    {
-        "label": "TYPE",
-        "pattern": [
-            {"LOWER": "periton"},
-            {"IS_PUNCT": True, "OP": "?"},
-            {"LOWER": "diyalizi"}
-        ]
-    },
-{
-    "label": "TYPE",
-    "pattern": [
-        {"LOWER": "hemodiyaliz"}
-    ]
-}
-
-
+     "pattern": [
+         {"LOWER": "tanı"},
+         {"IS_PUNCT": True, "OP": "?"},
+         {"LOWER": "kronik"},
+         {"LOWER": "böbrek"},
+         {"LOWER": "yetmezliği"}
+     ]},
+    {"label": "MEDICATION",
+     "pattern": [
+         {"LOWER": "parikalsitol"}
+     ]},
+    {"label": "LAB_RESULT_DATE",
+     "pattern": [
+         {"LOWER": {"IN": ["albumin", "pth", "ca", "p"]}},  # Matches entity labels
+         {"TEXT": "-", "OP": "?"},  # Matches optional dash
+         {"LOWER": "tarih"},  # Matches "Tarih"
+         {"TEXT": ":", "OP": "?"},  # Matches optional colon after "Tarih"
+         {"TEXT": {"REGEX": r"\b\d{2}[./-]\d{2}[./-]\d{4}\b"}},  # Matches the date (dd.mm.yyyy)
+         {"LOWER": {"IN": ["sonuc", "sonuç"]}},  # Matches "Sonuc" or "Sonuç"
+         {"TEXT": {"IN": ["-", "—"]}, "OP": "?"},  # Matches optional dash
+         {"IS_SPACE": True, "OP": "?"},  # Handles any spaces
+         {"TEXT": {"REGEX": r"^\d+(\.\d+)?$"}},  # Captures numeric results like "3.8" or "967"
+         {"TEXT": ",", "OP": "?"},  # Matches optional comma
+     ]},
+    {"label": "DOCTOR",
+     "pattern": [
+         {"TEXT":{"IN":["iç", "İç"]} },
+         {"LOWER": "hastalıkları"}
+     ]},
+    {"label": "DOCTOR",
+     "pattern": [
+         {"LOWER": "diyaliz"},
+         {"IS_PUNCT": True, "OP": "?"},
+         {"LOWER": "sertifikalı"}
+     ]},
+    {"label": "DATE",
+     "pattern": [
+         {"TEXT": {"REGEX": r"\b\d{2}[./-]\d{2}[./-]\d{4}\b"}}
+     ]},
+    {"label": "DOCTOR",
+     "pattern": [
+         {"LOWER": "çocuk"},
+         {"IS_PUNCT": True, "OP": "?"},
+         {"LOWER": "sağlığı"}
+     ]},
+    {"label": "DOCTOR",
+     "pattern": [
+         {"LOWER": "nefroloji"}
+     ]},
+    {"label": "TYPE",
+     "pattern": [
+         {"LOWER": "periton"},
+         {"IS_PUNCT": True, "OP": "?"},
+         {"LOWER": "diyalizi"}
+     ]},
+    {"label": "TYPE",
+     "pattern": [
+         {"LOWER": "hemodiyaliz"}
+     ]},
+    # Handling repeated measurements in one sentence
+    {"label": "LAB_RESULT",
+     "pattern": [
+         {"LOWER": {"IN": ["albümin", "albumin", "pth", "fosfor", "kalsiyum", "ca", "p"]}},
+         {"IS_PUNCT": True, "OP": "?"},
+         {"TEXT": ":"},
+         {"TEXT": {"REGEX": r"^\d+(\.\d+)?(mg|µg|g|dl)?$"}},  # Captures numbers with or without attached units
+         {"TEXT": ".", "OP": "?"},
+         {"TEXT": {"REGEX": r"^\d+$"}, "OP": "?"},  # Optional second numeric part
+         {"IS_SPACE": True, "OP": "?"},  # Handles optional spaces
+         {"IS_PUNCT": True, "OP": "?"},
+         {"TEXT": "-", "OP": "?"},
+         {"TEXT": {"REGEX": r"\b\d{2}[./-]\d{2}[./-]\d{4}\b"}, "OP": "?"}
+     ]},
 ]
 
 # Add the patterns to the matcher
@@ -114,11 +128,11 @@ matcher = Matcher(nlp.vocab)
 for pattern in patterns:
     matcher.add(pattern["label"], [pattern["pattern"]])
 
-
 @nlp_bp.route('/nlp', methods=['POST'])
 def extract_entities():
     # Retrieve the extracted text from the session
     text = session.get('extracted_text', '')
+    text = add_space_between_number_and_text(text)
 
     # Process the text with spaCy
     doc = nlp(text)
@@ -130,8 +144,13 @@ def extract_entities():
     # Extract matched entities
     for match_id, start, end in matches:
         entity_label = nlp.vocab.strings[match_id]  # Get the entity label
-        entity_text = doc[start:end].text
-        extracted_entities[entity_label] = entity_text
+        span = doc[start:end]  # Create a span for the matched entity
+
+        # Store the matched entities as a list to handle multiple occurrences
+        if entity_label in extracted_entities:
+            extracted_entities[entity_label].append(span.text)
+        else:
+            extracted_entities[entity_label] = [span.text]
 
     # Save the extracted entities back into the session
     session['extracted_entities'] = extracted_entities
@@ -139,28 +158,74 @@ def extract_entities():
     return jsonify({"entities": extracted_entities, "text": text})
 
 
+def add_space_between_number_and_text(text):
+    # Add a space between numbers and letters where there isn't one already
+    updated_text = re.sub(r'(\d)([a-zA-Z])', r'\1 \2', text)  # Add space after a number if followed by a letter
+    updated_text = re.sub(r'([a-zA-Z])(\d)', r'\1 \2', updated_text)  # Add space before a number if preceded by a letter
 
+    # Add a space after a colon if followed directly by a number or letter
+    updated_text = re.sub(r'(:)(\S)', r'\1 \2', updated_text)
 
-@nlp_bp.route('/nlp_check', methods=['POST'])
+    # Add a space after a number if followed by a comma and another character
+    updated_text = re.sub(r'(\d),(\S)', r'\1 , \2', updated_text)
+
+    # Add a space before a comma if it directly follows a number
+    updated_text = re.sub(r'(\d)(,)', r'\1 \2', updated_text)
+
+    return updated_text
+
+@nlp_bp.route('/nlp_check', methods=['GET'])
 def nlp_check():
     # Retrieve the extracted entities from the session
     extracted_entities = session.get('extracted_entities', {})
 
+    # Function to extract numeric value from the text
+    def extract_value(text, unit=None):
+        if unit:
+            value = text.split(unit)[0].strip()
+        else:
+            value = text
+        try:
+            return float(re.findall(r"[-+]?\d*\.\d+|\d+", value)[0])  # Extract numeric value
+        except IndexError:
+            return 0  # Return 0 if no numeric value is found
+
     # Extract the relevant entities for decision-making
-    pth_duzeyi = float(extracted_entities.get('PTH', '0').split()[0])
-    albumin_duzey = float(extracted_entities.get('ALBUMIN', '0').split()[0])
-    fosfor_duzey = float(extracted_entities.get('PHOSPHORUS', '0').split()[0])
-    calcium_duzey = float(extracted_entities.get('CALCIUM', '0').split()[0])
-    hasta_tipi = "hemodiyaliz"  # Assuming patient type based on context
-    tedavi_formu = "parenteral"  # Assuming treatment form based on context
-    doktor_tipi = "nefroloji"  # Assuming doctor specialization based on context
-    ilk_rapor_mu = True  # Default assumption (could be determined by additional logic)
-    lab_result_date = datetime.now()  # Simulating lab result date, replace with actual logic
+    initial_pth_value = extract_value(extracted_entities.get('PTH', ['0'])[0])  # Extracting the initial PTH value
+    lab_result_pth_values = [
+        extract_value(result) for result in extracted_entities.get('LAB_RESULT_DATE', [])
+        if 'PTH' in result
+    ]
+
+    # Ensure we have a valid lab result PTH value
+    lab_result_pth_value = lab_result_pth_values[0] if lab_result_pth_values else 0
+
+    # Calculate the threshold based on the initial PTH value
+    pth_threshold = initial_pth_value * 5 / 4
+
+    # Determine if there's an increase in PTH level (alt_artisi_var_mi)
+    alt_artisi_var_mi = lab_result_pth_value <= pth_threshold
+
+    # Other extracted values (these are placeholders; adjust based on your needs)
+    albumin_duzey = extract_value(extracted_entities.get('ALBUMIN', ['0'])[0], "g/L")
+    fosfor_duzey = extract_value(extracted_entities.get('PHOSPHORUS', ['0'])[0], "mg/dL")
+    calcium_duzey = extract_value(extracted_entities.get('CALCIUM', ['0'])[0], "mg/dL")
+
+    # Determine patient type and treatment form based on extracted entities
+    hasta_tipi = 'hemodiyaliz' if 'hemodiyaliz' in extracted_entities.get('TYPE', []) else 'periton_diyalizi'
+    tedavi_formu = 'parenteral' if 'parenteral' in extracted_entities.get('MEDICATION_FORM', []) else 'oral'
+    doktor_tipi = extracted_entities.get('DOCTOR', [''])[0]  # Normalize doctor type
+
+    # Simulate lab result date; replace with actual logic
+    lab_result_date = datetime.now()
+
+    # Assuming it's the first report (this can be dynamically determined)
+    ilk_rapor_mu = True
 
     # Use extracted entities in the decision-making function
     decision = parikalsitol_karar_al(
-        pth_duzeyi=pth_duzeyi,
-        alt_artisi_var_mi=True,  # This can be dynamically determined
+        pth_duzeyi=initial_pth_value,
+        alt_artisi_var_mi=alt_artisi_var_mi,
         albumin_duzey=albumin_duzey,
         fosfor_duzey=fosfor_duzey,
         hasta_tipi=hasta_tipi,
@@ -170,44 +235,52 @@ def nlp_check():
         lab_result_date=lab_result_date
     )
 
-    return jsonify({"decision": decision, "extracted": extracted_entities})
-
+    return jsonify({
+        "decision": decision,
+        "extracted": extracted_entities,
+        "is_pth_within_threshold": alt_artisi_var_mi,
+        "pth_threshold": pth_threshold,
+        "lab_result_pth_value": lab_result_pth_value
+    })
 
 def parikalsitol_karar_al(pth_duzeyi, alt_artisi_var_mi, albumin_duzey, fosfor_duzey, hasta_tipi, tedavi_formu, doktor_tipi, ilk_rapor_mu, lab_result_date):
     # Step 1: Check if lab results are within the last 3 months
     if lab_result_date < datetime.now() - timedelta(days=90):
-        return "Lab sonuçları 3 aydan daha eski, tedavi raporu geçerli değil."
+        return f"Lab sonuçları 3 aydan daha eski, tedavi raporu geçerli değil. Lab tarihi: {lab_result_date.strftime('%d/%m/%Y')}"
 
     # Step 2: Check if it's a follow-up report
     if not ilk_rapor_mu:
         # Step 3: Check for treatment termination conditions
         if pth_duzeyi < 150 or albumin_duzey > 10.5 or fosfor_duzey > 6:
-            return "Parikalsitol tedavisi sonlandırılmalıdır."
+            return f"Parikalsitol tedavisi sonlandırılmalıdır. PTH: {pth_duzeyi}, Albümin: {albumin_duzey}, Fosfor: {fosfor_duzey}"
         # Step 4: If no termination condition is met, proceed with follow-up checks
-        return "Takip raporlarında tedavi koşulları kontrol edilmelidir."
-    if pth_duzeyi < 150 or albumin_duzey > 10.5 or fosfor_duzey > 6:
-        return "Parikalsitol tedavisi sonlandırılmalıdır."
+        return f"Takip raporlarında tedavi koşulları kontrol edilmelidir. PTH: {pth_duzeyi}, Albümin: {albumin_duzey}, Fosfor: {fosfor_duzey}"
+
     # Step 5: Initial report checks (if it's the first report)
+    if pth_duzeyi < 150 or albumin_duzey > 10.5 or fosfor_duzey > 6:
+        return f"Parikalsitol tedavisi sonlandırılmalıdır. PTH: {pth_duzeyi}, Albümin: {albumin_duzey}, Fosfor: {fosfor_duzey}"
     if not (albumin_duzey < 10.2 and fosfor_duzey < 5.5):
-        return "Parikalsitol tedavisi başlatılamaz. Serum kalsiyum veya fosfor düzeyleri uygun değil."
+        return f"Parikalsitol tedavisi başlatılamaz. Serum kalsiyum veya fosfor düzeyleri uygun değil. Albümin: {albumin_duzey}, Fosfor: {fosfor_duzey}"
 
     # Step 6: PTH Level-Based Decisions with Doctor and Patient Type Conditions
     if pth_duzeyi > 600 or (pth_duzeyi > 300 and alt_artisi_var_mi):
         # Additional checks based on patient type and doctor specialization
         if hasta_tipi == "hemodiyaliz" and tedavi_formu == "parenteral":
-            if doktor_tipi in ["nefroloji", "iç_hastalıkları", "çocuk_sagligi", "diyaliz_sertifikali"]:
-                return "Hemodiyaliz hastaları için parenteral Parikalsitol reçete edilebilir."
+            if doktor_tipi.lower() in ["nefroloji", "iç hastalıkları", "çocuk sagligi", "diyaliz sertifikali"]:
+                return f"Hemodiyaliz hastaları için parenteral Parikalsitol reçete edilebilir. PTH: {pth_duzeyi}, Albümin: {albumin_duzey}, Fosfor: {fosfor_duzey}, Doktor: {doktor_tipi}"
+            elif doktor_tipi in ["İç hastalıkları", "İç Hastalıkları"]:
+                return f"Hemodiyaliz hastaları için parenteral Parikalsitol reçete edilebilir. PTH: {pth_duzeyi}, Albümin: {albumin_duzey}, Fosfor: {fosfor_duzey}, Doktor: {doktor_tipi}"
             else:
-                return "Tedaviyi reçete eden doktor yetkili değil."
+                return f"Tedaviyi reçete eden doktor yetkili değil. Doktor: {doktor_tipi}, PTH: {pth_duzeyi}, Albümin: {albumin_duzey}, Fosfor: {fosfor_duzey}"
         elif hasta_tipi == "periton_diyalizi" and tedavi_formu == "oral":
-            if doktor_tipi == "nefroloji":
-                return "Periton diyalizi hastaları için oral Parikalsitol reçete edilebilir."
+            if doktor_tipi.lower() == "nefroloji":
+                return f"Periton diyalizi hastaları için oral Parikalsitol reçete edilebilir. PTH: {pth_duzeyi}, Albümin: {albumin_duzey}, Fosfor: {fosfor_duzey}, Doktor: {doktor_tipi}"
             else:
-                return "Tedaviyi reçete eden doktor yetkili değil."
+                return f"Tedaviyi reçete eden doktor yetkili değil. Doktor: {doktor_tipi}, PTH: {pth_duzeyi}, Albümin: {albumin_duzey}, Fosfor: {fosfor_duzey}"
         else:
-            return "Tedavi koşulları sağlanıyor ancak hasta tipi veya tedavi formu uygun değil."
+            return f"Tedavi koşulları sağlanıyor ancak hasta tipi veya tedavi formu uygun değil. Hasta Tipi: {hasta_tipi}, Tedavi Formu: {tedavi_formu}"
     else:
-        return "Parikalsitol tedavisi başlatılamaz. PTH koşulları sağlanmamış."
+        return f"Parikalsitol tedavisi başlatılamaz. PTH {pth_duzeyi} koşulları sağlanmamış."
 
     # If none of the above conditions are met, default to this:
-    return "Tedaviye devam edilebilir; uygun rapor ve test sonuçları gerekmektedir."
+    return f"Tedaviye devam edilebilir; uygun rapor ve test sonuçları gerekmektedir. PTH: {pth_duzeyi}, Albümin: {albumin_duzey}, Fosfor: {fosfor_duzey}, Hasta Tipi: {hasta_tipi}, Tedavi Formu: {tedavi_formu}, Doktor: {doktor_tipi}"
